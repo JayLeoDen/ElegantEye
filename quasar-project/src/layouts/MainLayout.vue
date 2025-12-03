@@ -42,6 +42,12 @@ const linksList = [
     link: 'http://localhost:9000/#/unosfoto',
   },
   {
+    title: 'Popis Fotografa/Snimatelja',
+    caption: 'Popis Fotografa/Snimatelja - ElegantEye',
+    icon: 'list_alt',
+    link: 'http://localhost:9000/#/popisfoto',
+  },
+  {
     title: 'Registracija Korisnika',
     caption: 'Registracija Korisnika - ElegantEye',
     icon: 'login',
