@@ -53,31 +53,9 @@ res.json({ message: "Usluga dodana" });
 });
 });
 
-app.put("/api/usluge/:id", (req, res) => {
-const id = req.params.id;
-const { tip, cijena, opis } = req.body;
 
-const sql = `UPDATE Usluga SET Tip_usluge=?, Cijena_usluge=?, Opis_usluge=? WHERE Usluga_ID=?`;
 
-connection.query(sql, [tip, cijena || null, opis || null, id], (err, results) => {
-if (err) {
-console.error("Greška u SQL-u:", err);
-return res.status(500).json({ error: "Greška pri ažuriranju" });
-}
-res.json({ message: "Usluga ažurirana" });
-});
-});
 
-app.delete("/api/usluge/:id", (req, res) => {
-const id = req.params.id;
-connection.query("DELETE FROM Usluga WHERE Usluga_ID = ?", [id], (err, results) => {
-if (err) {
-console.error("Greška u SQL-u:", err);
-return res.status(500).json({ error: "Greška pri brisanju" });
-}
-res.json({ message: "Usluga obrisana" });
-});
-});
 
 app.listen(port, () => {
 console.log("Server running at port: " + port);
