@@ -110,6 +110,40 @@ app.delete("/api/fotografi/:id", (req, res) => {
   );
 });
 
+app.post('/login', (req, res) => {
+  const { korime, lozinka } = req.body;
+
+  if (!korime || !lozinka) {
+    return res.status(400).json({ message: 'Nedostaje korime ili lozinka' });
+  }
+
+  const query = 'SELECT id, korime, lozinka, uloga FROM prijava WHERE korime = ?';
+
+  connection.query(query, [korime], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Greška na serveru' });
+    }
+
+    if (results.length === 0) {
+      return res.status(401).json({ message: 'Korisnik ne postoji' });
+    }
+
+    const user = results[0];
+
+    if (user.lozinka !== lozinka) {
+      return res.status(401).json({ message: 'Pogrešna lozinka' });
+    }
+
+    res.json({
+      id: user.id,
+      korime: user.korime,
+      uloga: user.uloga
+    });
+  });
+});
+
+
 app.listen(port, () => {
   console.log("Server running at port: " + port);
 });

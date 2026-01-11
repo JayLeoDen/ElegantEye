@@ -2,19 +2,58 @@
   <q-layout view="lHh Lpr lFf">
     <q-header elevated>
       <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
-        <q-toolbar-title> Quasar App </q-toolbar-title>
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          aria-label="Menu"
+          @click="toggleLeftDrawer"
+        />
 
-        <div>Quasar v{{ $q.version }}</div>
+        <q-toolbar-title>
+          ElegantEye
+        </q-toolbar-title>
+
+        <q-space />
+
+        <template v-if="!isLoggedIn">
+          <q-btn
+            flat
+            label="Registracija"
+            icon="person_add"
+            to="/registracija"
+          />
+          <q-btn
+            flat
+            label="Login"
+            icon="login"
+            to="/login"
+          />
+        </template>
+
+        <template v-else>
+          <q-btn
+            flat
+            label="Odjava"
+            icon="logout"
+            @click="logout"
+          />
+        </template>
+
       </q-toolbar>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <q-item-label header> Essential Links </q-item-label>
+        <q-item-label header> Navigacija </q-item-label>
 
-        <EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />
+        <EssentialLink
+          v-for="link in filteredLinks"
+          :key="link.title"
+          v-bind="link"
+        />
       </q-list>
     </q-drawer>
 
@@ -25,51 +64,57 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import EssentialLink from 'components/EssentialLink.vue'
+
+const router = useRouter()
+const leftDrawerOpen = ref(false)
+
+function toggleLeftDrawer () {
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
+
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem('token')
+})
+
+const userRole = computed(() => {
+  const token = localStorage.getItem('token')
+  return token ? JSON.parse(token).uloga : null
+})
+
+function logout () {
+  localStorage.removeItem('token')
+  router.push('/login')
+}
 
 const linksList = [
   {
     title: 'Početna Stranica',
     caption: 'Početna Stranica - ElegantEye',
     icon: 'home',
-    link: 'https://quasar.dev',
-  },
-  {
-    title: 'Unos Fotografa/Snimatelja',
-    caption: 'Unos Fotografa/Snimatelja - ElegantEye',
-    icon: 'add',
-    link: 'http://localhost:9000/#/unosfoto',
+    link: '/'
   },
   {
     title: 'Popis Fotografa/Snimatelja',
     caption: 'Popis Fotografa/Snimatelja - ElegantEye',
     icon: 'list_alt',
-    link: 'http://localhost:9000/#/popisfoto',
+    link: '/popisfoto'
   },
   {
-    title: 'Registracija Korisnika',
-    caption: 'Registracija Korisnika - ElegantEye',
-    icon: 'login',
-    link: 'http://localhost:9000/#/registracija',
-  },
-  {
-    title: 'Login Korisnika',
-    caption: 'Login Korisnika - ElegantEye',
-    icon: 'key',
-    link: 'http://localhost:9000/#/login',
-  },
-  {
-    title: 'Github',
-    caption: 'Github Repozitorij - ElegantEye',
-    icon: 'code',
-    link: 'https://github.com/JayLeoDen/ElegantEye',
+    title: 'Unos Fotografa/Snimatelja',
+    caption: 'Unos Fotografa/Snimatelja - ElegantEye',
+    icon: 'add',
+    link: '/admin/unosfoto',
+    role: 'admin'
   }
 ]
 
-const leftDrawerOpen = ref(false)
-
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value
-}
+const filteredLinks = computed(() => {
+  return linksList.filter(link => {
+    if (!link.role) return true
+    return userRole.value === link.role
+  })
+})
 </script>
