@@ -23,11 +23,6 @@ connection.connect(err => {
   console.log("Connected to DB");
 });
 
-// =====================
-// DROPDOWN ENDPOINTI
-// =====================
-
-// Klijenti
 app.get("/api/klijenti", (req, res) => {
   connection.query("SELECT Sifra_klijenta FROM Klijent", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
@@ -35,7 +30,6 @@ app.get("/api/klijenti", (req, res) => {
   });
 });
 
-// Događaji
 app.get("/api/dogadaji", (req, res) => {
   connection.query("SELECT Sifra_dogadaja FROM Dogadaj", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
@@ -43,7 +37,6 @@ app.get("/api/dogadaji", (req, res) => {
   });
 });
 
-// Usluge
 app.get("/api/usluge", (req, res) => {
   connection.query("SELECT Usluga_ID FROM Usluga", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
@@ -51,11 +44,6 @@ app.get("/api/usluge", (req, res) => {
   });
 });
 
-// =====================
-// REZERVACIJE
-// =====================
-
-// Dohvat svih rezervacija
 app.get("/api/rezervacije", (req, res) => {
   connection.query("SELECT * FROM Rezervacija", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
@@ -63,7 +51,6 @@ app.get("/api/rezervacije", (req, res) => {
   });
 });
 
-// Dodavanje nove rezervacije (auto-increment)
 app.post("/api/rezervacije", (req, res) => {
   const { Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena } = req.body;
 
@@ -82,7 +69,6 @@ app.post("/api/rezervacije", (req, res) => {
   );
 });
 
-// Brisanje rezervacije po ID-u
 app.delete("/api/rezervacije/:id", (req, res) => {
   const id = Number(req.params.id);
   connection.query(
@@ -95,9 +81,6 @@ app.delete("/api/rezervacije/:id", (req, res) => {
   );
 });
 
-// =====================
-// SERVER
-// =====================
 app.listen(port, () => {
   console.log("Server running at port: " + port);
 });

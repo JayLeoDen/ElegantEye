@@ -6,7 +6,6 @@
       </q-card-section>
 
       <q-card-section>
-        <!-- Dropdown klijent -->
         <q-select
           v-model="Sifra_klijenta"
           label="Odaberi klijenta"
@@ -16,7 +15,6 @@
           :rules="[val => !!val || 'Klijent je obavezan']"
         />
 
-        <!-- Dropdown događaj -->
         <q-select
           v-model="Sifra_dogadaja"
           label="Odaberi događaj"
@@ -26,7 +24,6 @@
           :rules="[val => !!val || 'Događaj je obavezan']"
         />
 
-        <!-- Dropdown usluga -->
         <q-select
           v-model="Usluga_ID"
           label="Odaberi uslugu"
@@ -36,7 +33,6 @@
           :rules="[val => !!val || 'Usluga je obavezna']"
         />
 
-        <!-- Napomena -->
         <q-input
           v-model="Napomena"
           label="Napomena"
@@ -79,7 +75,6 @@ export default {
           axios.get("http://localhost:3000/api/usluge")
         ]);
 
-        // Dropdown opcije su sada samo brojevi
         this.klijenti = klijentiRes.data.map(v => ({ label: v, value: v }));
         this.dogadaji = dogadajiRes.data.map(v => ({ label: v, value: v }));
         this.usluge = uslugeRes.data.map(v => ({ label: v, value: v }));
@@ -108,7 +103,6 @@ export default {
           message: `Rezervacija dodana! ID: ${res.data.id}`
         });
 
-        // reset polja
         this.Sifra_klijenta = null;
         this.Sifra_dogadaja = null;
         this.Usluga_ID = null;
