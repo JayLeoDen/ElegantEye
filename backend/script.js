@@ -23,92 +23,81 @@ connection.connect(err => {
   console.log("Connected to DB");
 });
 
+// =====================
+// DROPDOWN ENDPOINTI
+// =====================
+
+// Klijenti
+app.get("/api/klijenti", (req, res) => {
+  connection.query("SELECT Sifra_klijenta FROM Klijent", (err, results) => {
+    if (err) return res.status(500).json({ error: err.sqlMessage });
+    res.json(results.map(r => r.Sifra_klijenta));
+  });
+});
+
+// Događaji
+app.get("/api/dogadaji", (req, res) => {
+  connection.query("SELECT Sifra_dogadaja FROM Dogadaj", (err, results) => {
+    if (err) return res.status(500).json({ error: err.sqlMessage });
+    res.json(results.map(r => r.Sifra_dogadaja));
+  });
+});
+
+// Usluge
+app.get("/api/usluge", (req, res) => {
+  connection.query("SELECT Usluga_ID FROM Usluga", (err, results) => {
+    if (err) return res.status(500).json({ error: err.sqlMessage });
+    res.json(results.map(r => r.Usluga_ID));
+  });
+});
+
+// =====================
+// REZERVACIJE
+// =====================
+
 // Dohvat svih rezervacija
 app.get("/api/rezervacije", (req, res) => {
-  connection.query("SELECT * FROM Rezervacija", (error, results) => {
-    if (error) {
-      console.error("SQL ERROR:", error);
-      return res.status(500).json({ error: error.sqlMessage });
-    }
+  connection.query("SELECT * FROM Rezervacija", (err, results) => {
+    if (err) return res.status(500).json({ error: err.sqlMessage });
     res.json(results);
   });
 });
 
-// Dohvat rezervacije po ID-u
-app.get("/api/rezervacije/:id", (req, res) => {
-  const id = Number(req.params.id);
-  connection.query(
-    "SELECT * FROM Rezervacija WHERE Sifra_rezervacije = ?",
-    [id],
-    (error, results) => {
-      if (error) {
-        console.error("SQL ERROR:", error);
-        return res.status(500).json({ error: error.sqlMessage });
-      }
-      res.json(results[0]);
-    }
-  );
-});
-
-// Dodavanje nove rezervacije (Sifra_rezervacije ručno)
+// Dodavanje nove rezervacije (auto-increment)
 app.post("/api/rezervacije", (req, res) => {
-  const { Sifra_rezervacije, Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena } = req.body;
+  const { Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena } = req.body;
 
-  if (!Sifra_rezervacije || !Sifra_klijenta || !Sifra_dogadaja || !Usluga_ID) {
-    return res.status(400).json({ error: "Obavezna polja: šifra rezervacije, klijenta, događaja i usluge" });
+  if (!Sifra_klijenta || !Sifra_dogadaja || !Usluga_ID) {
+    return res.status(400).json({ error: "Obavezna polja: klijent, događaj i usluga" });
   }
 
   connection.query(
-    `INSERT INTO Rezervacija
-     (Sifra_rezervacije, Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena)
-     VALUES (?, ?, ?, ?, ?)`,
-    [Number(Sifra_rezervacije), Number(Sifra_klijenta), Number(Sifra_dogadaja), Number(Usluga_ID), Napomena || null],
+    `INSERT INTO Rezervacija (Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena)
+     VALUES (?, ?, ?, ?)`,
+    [Number(Sifra_klijenta), Number(Sifra_dogadaja), Number(Usluga_ID), Napomena || null],
     (error, results) => {
-      if (error) {
-        console.error("SQL ERROR:", error);
-        return res.status(500).json({ error: error.sqlMessage });
-      }
-      res.json({ message: "Rezervacija dodana", id: Sifra_rezervacije });
+      if (error) return res.status(500).json({ error: error.sqlMessage });
+      res.json({ message: "Rezervacija dodana", id: results.insertId });
     }
   );
 });
 
-// Ažuriranje rezervacije
-app.put("/api/rezervacije/:id", (req, res) => {
-  const id = Number(req.params.id);
-  const { Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena } = req.body;
-
-  connection.query(
-    `UPDATE Rezervacija
-     SET Sifra_klijenta=?, Sifra_dogadaja=?, Usluga_ID=?, Napomena=?
-     WHERE Sifra_rezervacije=?`,
-    [Number(Sifra_klijenta), Number(Sifra_dogadaja), Number(Usluga_ID), Napomena || null, id],
-    (error, results) => {
-      if (error) {
-        console.error("SQL ERROR:", error);
-        return res.status(500).json({ error: error.sqlMessage });
-      }
-      res.json({ message: "Rezervacija ažurirana" });
-    }
-  );
-});
-
-// Brisanje rezervacije
+// Brisanje rezervacije po ID-u
 app.delete("/api/rezervacije/:id", (req, res) => {
   const id = Number(req.params.id);
   connection.query(
     "DELETE FROM Rezervacija WHERE Sifra_rezervacije = ?",
     [id],
-    (error, results) => {
-      if (error) {
-        console.error("SQL ERROR:", error);
-        return res.status(500).json({ error: error.sqlMessage });
-      }
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.sqlMessage });
       res.json({ message: "Rezervacija obrisana" });
     }
   );
 });
 
+// =====================
+// SERVER
+// =====================
 app.listen(port, () => {
   console.log("Server running at port: " + port);
 });
