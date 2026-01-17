@@ -26,7 +26,8 @@ const routes = [
     children: [
       { path: '', component: () => import('pages/IndexPage.vue') },
       { path: 'popisfoto', component: () => import('pages/PopisFotografa.vue') },
-      { path: 'unosfoto', component: () => import('pages/UnosFotografa.vue') }
+      { path: 'unosfoto', component: () => import('pages/UnosFotografa.vue') },
+      { path: 'potvrda', component: () => import('pages/PotvrdaRegistracije.vue')}
     ]
   },
 

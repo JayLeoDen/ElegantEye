@@ -65,10 +65,8 @@ const router = useRouter()
 const leftDrawerOpen = ref(true)
 const ime_korisnika = ref('')
 
-// reactive login state
 const isLoggedIn = ref(false)
 
-// inicijalno provjeri token
 const token = localStorage.getItem('token')
 if (token) {
   const korisnik = JSON.parse(token)
@@ -80,7 +78,6 @@ if (token) {
   }
 }
 
-// logout funkcija
 function logout() {
   localStorage.removeItem('token')
   ime_korisnika.value = ''
@@ -110,6 +107,12 @@ const linksList = [
     caption: 'Unos fotografa - ElegantEye',
     icon: 'library_add',
     link: '/admin/unosfoto'
+  },
+  {
+    title: 'Potvrda Registracija',
+    caption: 'Potvrda Registracija - ElegantEye',
+    icon: 'incomplete_circle',
+    link: '/admin/potvrda'
   }
 ]
 </script>

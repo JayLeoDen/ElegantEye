@@ -7,14 +7,17 @@
 
         <q-input
           filled
-          v-model.number="noviFotograf.id"
-          label="MB (ID)"
-          type="number"
+          v-model="noviFotograf.ime"
+          label="Ime"
           class="col-12 col-md-6"
         />
 
-        <q-input filled v-model="noviFotograf.ime" label="Ime" class="col-12 col-md-6" />
-        <q-input filled v-model="noviFotograf.prezime" label="Prezime" class="col-12 col-md-6" />
+        <q-input
+          filled
+          v-model="noviFotograf.prezime"
+          label="Prezime"
+          class="col-12 col-md-6"
+        />
 
         <q-select
           filled
@@ -24,9 +27,29 @@
           class="col-12 col-md-6"
         />
 
-        <q-input filled v-model="noviFotograf.email" label="Email" type="email" class="col-12 col-md-6" />
-        <q-input filled v-model="noviFotograf.telefon" label="Telefon" type="tel" class="col-12 col-md-6" />
-        <q-input filled v-model="noviFotograf.portfolio" label="Link na portfolio" type="url" class="col-12" autogrow />
+        <q-input
+          filled
+          v-model="noviFotograf.email"
+          label="Email"
+          type="email"
+          class="col-12 col-md-6"
+        />
+
+        <q-input
+          filled
+          v-model="noviFotograf.telefon"
+          label="Telefon"
+          type="tel"
+          class="col-12 col-md-6"
+        />
+
+        <q-input
+          filled
+          v-model="noviFotograf.portfolio"
+          label="Link na portfolio"
+          type="url"
+          class="col-12 col-md-6"
+        />
 
       </div>
 
@@ -42,12 +65,11 @@
 import { ref } from "vue";
 import axios from "axios";
 
-const backendURL = "http://localhost:3000/api/fotografi"; 
+const backendURL = "http://localhost:3000/api/fotografi";
 
 const ulogaOpcije = ["Fotograf", "Snimatelj", "Oboje"];
 
 const noviFotograf = ref({
-  id: null,
   ime: "",
   prezime: "",
   uloga: "",
@@ -58,7 +80,6 @@ const noviFotograf = ref({
 
 function odustani() {
   noviFotograf.value = {
-    id: null,
     ime: "",
     prezime: "",
     uloga: "",
@@ -69,18 +90,18 @@ function odustani() {
 }
 
 async function spremiFotografa() {
-  if (!noviFotograf.value.id || !noviFotograf.value.ime || !noviFotograf.value.prezime) {
-    alert("Molimo unesite MB, ime i prezime.");
+  if (!noviFotograf.value.ime || !noviFotograf.value.prezime) {
+    alert("Molimo unesite ime i prezime.");
     return;
   }
 
   try {
     await axios.post(backendURL, noviFotograf.value);
-    alert("Fotograf dodan!");
+    alert("Fotograf uspješno dodan!");
     odustani();
   } catch (error) {
     console.error("Greška pri spremanju:", error);
-    alert("Došlo je do greške pri unosu.");
+    alert("Došlo je do greške pri unosu fotografa.");
   }
 }
 </script>

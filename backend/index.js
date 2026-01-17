@@ -44,7 +44,6 @@ app.get("/api/fotografi/:id", (req, res) => {
 
 app.post("/api/fotografi", (req, res) => {
   const {
-    id,
     ime,
     prezime,
     uloga,
@@ -53,26 +52,34 @@ app.post("/api/fotografi", (req, res) => {
     portfolio,
   } = req.body;
 
-  if (!id || !ime || !prezime) {
-    return res.status(400).json({ error: "MB, ime i prezime su obavezni" });
+  if (!ime || !prezime) {
+    return res.status(400).json({ error: "Ime i prezime su obavezni" });
   }
 
   connection.query(
     `INSERT INTO Fotograf_Snimatelj
-     (MB_fotografa_snimatelja, Ime_fotografa_snimatelja, Prezime_fotografa_snimatelja,
-      Specijalizacija_fotografa_snimatelja, Email_fotografa_snimatelja,
-      Telefon_fotografa_snimatelja, Portfolio_fotografa_snimatelja)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [id, ime, prezime, uloga, email, telefon, portfolio || null],
+     (Ime_fotografa_snimatelja,
+      Prezime_fotografa_snimatelja,
+      Specijalizacija_fotografa_snimatelja,
+      Email_fotografa_snimatelja,
+      Telefon_fotografa_snimatelja,
+      Portfolio_fotografa_snimatelja)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [ime, prezime, uloga, email, telefon, portfolio || null],
     (error, results) => {
       if (error) {
         console.error(error);
         return res.status(500).json({ error: "Greška pri unosu" });
       }
-      res.json({ message: "Fotograf dodan" });
+
+      res.status(201).json({
+        message: "Fotograf dodan",
+        MB_fotografa_snimatelja: results.insertId
+      });
     }
   );
 });
+
 
 app.put("/api/fotografi/:id", (req, res) => {
   const id = req.params.id;
@@ -142,6 +149,115 @@ app.post('/login', (req, res) => {
     });
   });
 });
+
+app.get("/api/registracija", (req, res) => {
+  connection.query(
+    "SELECT * FROM registracija",
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Greška pri dohvaćanju" });
+      }
+      res.json(results);
+    }
+  );
+});
+
+
+app.post("/api/registracija", (req, res) => {
+  const { ime, prezime, email, korime, lozinka } = req.body;
+
+  if (!ime || !prezime || !korime || !lozinka || !email) {
+    return res.status(400).json({ error: "Sva polja su obavezna" });
+  }
+
+  connection.query(
+    `INSERT INTO registracija (ime, prezime, korime, lozinka, email)
+     VALUES (?, ?, ?, ?, ?)`,
+    [ime, prezime, korime, lozinka, email],
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Greška pri unosu" });
+      }
+      res.json({ message: "Korisnik registriran" });
+    }
+  );
+});
+
+
+app.post("/api/registracija/:id/odobri", (req, res) => {
+  const { id } = req.params;
+  const { uloga } = req.body;
+
+  if (!uloga) {
+    return res.status(400).json({ error: "Uloga je obavezna" });
+  }
+
+  connection.query(
+    "SELECT * FROM registracija WHERE id = ?",
+    [id],
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Greška pri dohvaćanju korisnika" });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: "Korisnik ne postoji" });
+      }
+
+      const korisnik = results[0];
+
+      connection.query(
+        "SELECT id FROM prijava WHERE korime = ?",
+        [korisnik.korime],
+        (err2, postoji) => {
+          if (err2) {
+            console.error(err2);
+            return res.status(500).json({ error: "Greška pri provjeri korisnika" });
+          }
+
+          if (postoji.length > 0) {
+            return res.status(400).json({
+              error: "Korisnik već postoji u sustavu"
+            });
+          }
+
+          connection.query(
+  "INSERT INTO prijava (ime, prezime, korime, lozinka, email, uloga) VALUES (?, ?, ?, ?, ?, ?)",
+  [
+    korisnik.ime, korisnik.prezime, korisnik.korime, korisnik.lozinka, korisnik.email, uloga
+  ],
+  (err3) => {
+    if (err3) {
+      console.error(err3);
+      return res.status(500).json({ error: "Greška pri upisu u prijava" });
+    }
+
+              connection.query(
+                "DELETE FROM registracija WHERE id = ?",
+                [id],
+                (err4) => {
+                  if (err4) {
+                    console.error(err4);
+                    return res.status(500).json({ error: "Greška pri brisanju iz registracija" });
+                  }
+
+                  res.json({
+                    message: "Korisnik uspješno odobren"
+                  });
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+});
+
+
 
 
 app.listen(port, () => {
