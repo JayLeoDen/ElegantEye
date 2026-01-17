@@ -1,7 +1,7 @@
 <template>
   <q-page padding>
     <q-banner class="bg-primary text-white q-mb-lg rounded-borders">
-      <div class="text-h5"> Popis svih događaja</div>
+      <div class="text-h5">Popis svih događaja</div>
       <div class="text-subtitle2">Pregled svih evidentiranih događaja</div>
     </q-banner>
 
@@ -16,7 +16,7 @@
           <div class="row items-center q-mb-sm">
             <q-icon name="event" size="md" color="primary" class="q-mr-sm" />
             <div class="text-h6">
-              {{ dogadaj.Tip_dogadaja || 'Nepoznat tip' }}
+              {{ dogadaj.Tip_dogadaja || "Nepoznat tip" }}
             </div>
           </div>
 
@@ -40,7 +40,7 @@
 
           <div class="row items-center q-mt-sm">
             <q-icon name="place" color="grey-7" class="q-mr-sm" />
-            <span>{{ dogadaj.Lokacija_dogadaja || 'Bez lokacije' }}</span>
+            <span>{{ dogadaj.Lokacija_dogadaja || "Bez lokacije" }}</span>
           </div>
 
           <div

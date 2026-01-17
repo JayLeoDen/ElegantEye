@@ -1,22 +1,13 @@
 <template>
   <q-page padding>
     <q-banner class="bg-secondary text-white q-mb-lg rounded-borders">
-      <div class="text-h5"> Unos novog događaja</div>
+      <div class="text-h5">Unos novog događaja</div>
       <div class="text-subtitle2">Dodaj novi događaj u sustav</div>
     </q-banner>
 
     <div class="row justify-center">
       <q-card class="col-12 col-md-8 q-pa-lg" bordered>
         <div class="row q-col-gutter-md">
-
-          <q-input
-            filled
-            v-model.number="noviDogadaj.sifra"
-            label="Šifra događaja"
-            type="number"
-            class="col-12 col-md-6"
-            prepend-icon="vpn_key"
-          />
 
           <q-input
             filled
@@ -83,7 +74,6 @@ import axios from "axios";
 const backendURL = "http://localhost:3000/api/dogadaji";
 
 const noviDogadaj = ref({
-  sifra: null,
   tip: "",
   datumVrijeme: "",
   lokacija: "",
@@ -92,7 +82,6 @@ const noviDogadaj = ref({
 
 function odustani() {
   noviDogadaj.value = {
-    sifra: null,
     tip: "",
     datumVrijeme: "",
     lokacija: "",
@@ -101,18 +90,13 @@ function odustani() {
 }
 
 async function spremiDogadaj() {
-  if (!noviDogadaj.value.sifra) {
-    alert("Molimo unesite šifru događaja.");
-    return;
-  }
-
   try {
     await axios.post(backendURL, noviDogadaj.value);
     alert("Događaj uspješno dodan!");
     odustani();
   } catch (error) {
     console.error(error);
-    alert("Došlo je do greške pri unosu.");
+    alert("Došlo je do greške pri unosu događaja.");
   }
 }
 </script>

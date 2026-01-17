@@ -54,38 +54,37 @@ app.get("/api/dogadaji/:id", (req, res) => {
 
 app.post("/api/dogadaji", (req, res) => {
   const {
-    sifra,
     tip,
     datumVrijeme,
     lokacija,
     opis
   } = req.body;
 
-  if (!sifra) {
-    return res.status(400).json({ error: "Šifra događaja je obavezna" });
-  }
-
   connection.query(
     `INSERT INTO Dogadaj
-     (Sifra_dogadaja, Tip_dogadaja, Datum_i_vrijeme_dogadaja,
+     (Tip_dogadaja, Datum_i_vrijeme_dogadaja,
       Lokacija_dogadaja, Opis_dogadaja)
-     VALUES (?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?)`,
     [
-      sifra,
       tip || null,
       datumVrijeme || null,
       lokacija || null,
       opis || null
     ],
-    (error) => {
+    (error, result) => {
       if (error) {
         console.error(error);
         return res.status(500).json({ error: "Greška pri unosu događaja" });
       }
-      res.json({ message: "Događaj uspješno dodan" });
+
+      res.json({
+        message: "Događaj uspješno dodan",
+        id: result.insertId
+      });
     }
   );
 });
+
 
 app.listen(port, () => {
   console.log("Server running at port: " + port);
