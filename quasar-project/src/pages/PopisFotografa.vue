@@ -51,13 +51,11 @@ import axios from 'axios'
 
 const fotografi = ref([])
 
-// Funkcija za prvo veliko slovo uloge
 function formatUloga(uloga) {
   if (!uloga) return ''
   return uloga.charAt(0).toUpperCase() + uloga.slice(1).toLowerCase()
 }
 
-// Boje po ulozi
 function bojaUloge(uloga) {
   const normalized = formatUloga(uloga)
   switch (normalized) {
@@ -68,7 +66,6 @@ function bojaUloge(uloga) {
   }
 }
 
-// Funkcija za portfolio link
 function pripremiLink(link) {
   if (!/^https?:\/\//i.test(link)) {
     return 'https://' + link
@@ -76,7 +73,6 @@ function pripremiLink(link) {
   return link
 }
 
-// Dohvat podataka s backend-a
 onMounted(async () => {
   try {
     const res = await axios.get('http://localhost:3000/api/fotografi')
