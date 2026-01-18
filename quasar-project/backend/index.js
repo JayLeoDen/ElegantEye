@@ -36,21 +36,6 @@ app.get("/api/dogadaji", (req, res) => {
 });
 
 
-app.get("/api/dogadaji/:id", (req, res) => {
-  const id = req.params.id;
-
-  connection.query(
-    "SELECT * FROM Dogadaj WHERE Sifra_dogadaja = ?",
-    [id],
-    (error, results) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Greška pri dohvaćanju" });
-      }
-      res.json(results[0]);
-    }
-  );
-});
 
 app.post("/api/dogadaji", (req, res) => {
   const {
