@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import mysql from "mysql2";
+
 const app = express();
 const port = 3000;
 
@@ -18,7 +19,10 @@ const connection = mysql.createConnection({
 });
 
 connection.connect(err => {
-  if (err) throw err;
+  if (err) {
+    console.error("Greška pri spajanju na bazu:", err);
+    return;
+  }
   console.log("Connected to DB");
 });
 
@@ -27,7 +31,6 @@ app.get("/api/dogadaji", (req, res) => {
     "SELECT * FROM Dogadaj ORDER BY Datum_i_vrijeme_dogadaja DESC",
     (error, results) => {
       if (error) {
-        console.error(error);
         return res.status(500).json({ error: "Greška pri dohvaćanju" });
       }
       res.json(results);
@@ -35,27 +38,14 @@ app.get("/api/dogadaji", (req, res) => {
   );
 });
 
-
-
 app.post("/api/dogadaji", (req, res) => {
-  const {
-    tip,
-    datumVrijeme,
-    lokacija,
-    opis
-  } = req.body;
+  const { tip, datumVrijeme, lokacija, opis } = req.body;
 
   connection.query(
-    `INSERT INTO Dogadaj
-     (Tip_dogadaja, Datum_i_vrijeme_dogadaja,
-      Lokacija_dogadaja, Opis_dogadaja)
+    `INSERT INTO Dogadaj 
+     (Tip_dogadaja, Datum_i_vrijeme_dogadaja, Lokacija_dogadaja, Opis_dogadaja)
      VALUES (?, ?, ?, ?)`,
-    [
-      tip || null,
-      datumVrijeme || null,
-      lokacija || null,
-      opis || null
-    ],
+    [tip, datumVrijeme, lokacija, opis],
     (error, result) => {
       if (error) {
         console.error(error);
@@ -66,6 +56,21 @@ app.post("/api/dogadaji", (req, res) => {
         message: "Događaj uspješno dodan",
         id: result.insertId
       });
+    }
+  );
+});
+
+app.get("/api/rezervacije/:sifraDogadaja", (req, res) => {
+  const sifraDogadaja = req.params.sifraDogadaja;
+
+  connection.query(
+    "SELECT * FROM Rezervacija WHERE Sifra_dogadaja = ?",
+    [sifraDogadaja],
+    (error, results) => {
+      if (error) {
+        return res.status(500).json({ error: "Greška pri dohvaćanju rezervacija" });
+      }
+      res.json(results);
     }
   );
 });
