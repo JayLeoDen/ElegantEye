@@ -24,7 +24,7 @@ connection.connect(err => {
 });
 
 app.get("/api/fotografi", (req, res) => {
-  connection.query("SELECT * FROM Fotograf_Snimatelj", (error, results) => {
+  connection.query("SELECT * FROM snimatelj_fotograf", (error, results) => {
     if (error) throw error;
     res.json(results);
   });
@@ -33,7 +33,7 @@ app.get("/api/fotografi", (req, res) => {
 app.get("/api/fotografi/:id", (req, res) => {
   const id = req.params.id;
   connection.query(
-    "SELECT * FROM Fotograf_Snimatelj WHERE MB_fotografa_snimatelja = ?",
+    "SELECT * FROM snimatelj_fotograf WHERE fotograf_snimatelj_id = ?",
     [id],
     (error, results) => {
       if (error) throw error;
@@ -46,10 +46,9 @@ app.post("/api/fotografi", (req, res) => {
   const {
     ime,
     prezime,
-    uloga,
     email,
-    telefon,
-    portfolio,
+    lozinka,
+    opis
   } = req.body;
 
   if (!ime || !prezime) {
@@ -57,15 +56,15 @@ app.post("/api/fotografi", (req, res) => {
   }
 
   connection.query(
-    `INSERT INTO Fotograf_Snimatelj
-     (Ime_fotografa_snimatelja,
-      Prezime_fotografa_snimatelja,
-      Specijalizacija_fotografa_snimatelja,
-      Email_fotografa_snimatelja,
-      Telefon_fotografa_snimatelja,
-      Portfolio_fotografa_snimatelja)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [ime, prezime, uloga, email, telefon, portfolio || null],
+    `INSERT INTO snimatelj_fotograf
+     (ime_fotografa_snimatelja,
+      prezime_fotografa_snimatelja,
+      email_adresa_fotografa_snimatelja,
+      lozinka_fotografa_snimatelja,
+      opis_rada_fotografa_snimatelja
+      )
+     VALUES (?, ?, ?, ?, ?)`,
+    [ime, prezime, email, lozinka, opis || null],
     (error, results) => {
       if (error) {
         console.error(error);
@@ -74,7 +73,7 @@ app.post("/api/fotografi", (req, res) => {
 
       res.status(201).json({
         message: "Fotograf dodan",
-        MB_fotografa_snimatelja: results.insertId
+        fotograf_snimatelj_id: results.insertId
       });
     }
   );
@@ -83,15 +82,17 @@ app.post("/api/fotografi", (req, res) => {
 
 app.put("/api/fotografi/:id", (req, res) => {
   const id = req.params.id;
-  const { ime, prezime, uloga, email, telefon, portfolio } = req.body;
+  const { ime, prezime, email, lozinka, opis } = req.body;
 
   connection.query(
-    `UPDATE Fotograf_Snimatelj
-     SET Ime_fotografa_snimatelja=?, Prezime_fotografa_snimatelja=?,
-         Specijalizacija_fotografa_snimatelja=?, Email_fotografa_snimatelja=?,
-         Telefon_fotografa_snimatelja=?, Portfolio_fotografa_snimatelja=?
-     WHERE MB_fotografa_snimatelja=?`,
-    [ime, prezime, uloga, email, telefon, portfolio || null, id],
+    `UPDATE snimatelj_fotograf
+     SET ime_fotografa_snimatelja=?,
+      prezime_fotografa_snimatelja=?,
+      email_adresa_fotografa_snimatelja=?,
+      lozinka_fotografa_snimatelja=?,
+      opis_rada_fotografa_snimatelja=?
+     WHERE fotograf_snimatelj_id=?`,
+    [ime, prezime, email, lozinka, opis || null, id],
     (error, results) => {
       if (error) {
         console.error(error);
@@ -105,7 +106,7 @@ app.put("/api/fotografi/:id", (req, res) => {
 app.delete("/api/fotografi/:id", (req, res) => {
   const id = req.params.id;
   connection.query(
-    "DELETE FROM Fotograf_Snimatelj WHERE MB_fotografa_snimatelja = ?",
+    "DELETE FROM snimatelj_fotograf WHERE fotograf_snimatelj_id = ?",
     [id],
     (error, results) => {
       if (error) {
