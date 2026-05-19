@@ -1,110 +1,177 @@
 <template>
   <q-page class="q-pa-md flex flex-center">
-    <q-card class="q-pa-lg" style="width: 100%; max-width: 500px">
+
+    <q-card
+      class="q-pa-lg"
+      style="width: 100%; max-width: 500px"
+    >
+
       <q-card-section>
-        <div class="text-h6">Unos novog događaja</div>
+        <div class="text-h6">
+          Unos novog događaja
+        </div>
       </q-card-section>
 
+
       <q-form ref="forma">
+
+        <!-- Datum -->
         <q-input
           filled
-          v-model="dogadaj.tip"
-          label="Tip događaja"
-          :rules="[val => !!val || 'Tip događaja je obavezan']"
+          type="date"
+          v-model="dogadaj.datum_dogadaja"
+          label="Datum događaja"
+          class="q-mb-md"
+          :rules="[
+            val => !!val || 'Datum događaja je obavezan'
+          ]"
         />
 
+
+        <!-- Vrijeme -->
         <q-input
           filled
-          type="datetime-local"
-          v-model="dogadaj.datumVrijeme"
-          label="Datum i vrijeme"
-          :rules="[val => !!val || 'Datum i vrijeme su obavezni']"
+          type="time"
+          v-model="dogadaj.vrijeme_dogadaja"
+          label="Vrijeme događaja"
+          class="q-mb-md"
+          :rules="[
+            val => !!val || 'Vrijeme događaja je obavezno'
+          ]"
         />
 
+
+        <!-- Lokacija -->
         <q-input
           filled
-          v-model="dogadaj.lokacija"
-          label="Lokacija"
-          :rules="[val => !!val || 'Lokacija je obavezna']"
+          v-model="dogadaj.lokacija_dogadaja"
+          label="Lokacija događaja"
+          class="q-mb-md"
+          :rules="[
+            val => !!val || 'Lokacija je obavezna'
+          ]"
         />
 
+
+        <!-- Opis -->
         <q-input
           filled
           type="textarea"
-          v-model="dogadaj.opis"
+          v-model="dogadaj.opis_dogadaja"
           label="Opis događaja"
-          :rules="[val => !!val || 'Opis je obavezan']"
+          class="q-mb-md"
+          :rules="[
+            val => !!val || 'Opis događaja je obavezan'
+          ]"
         />
 
+
+        <!-- Gumbi -->
         <div class="q-mt-md row justify-end q-gutter-sm">
+
           <q-btn
             label="Spremi događaj"
             color="primary"
             @click="spremiDogadaj"
           />
+
           <q-btn
             label="Očisti"
             color="negative"
             flat
             @click="resetForme"
           />
+
         </div>
+
       </q-form>
+
     </q-card>
+
   </q-page>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import axios from 'axios'
-import { Notify } from 'quasar'
+import { ref } from "vue";
+import axios from "axios";
+import { Notify } from "quasar";
 
-const forma = ref(null)
 
+// Referenca forme
+const forma = ref(null);
+
+
+// Objekt događaja
 const dogadaj = ref({
-  tip: '',
-  datumVrijeme: '',
-  lokacija: '',
-  opis: ''
-})
 
-function spremiDogadaj () {
-  forma.value.validate().then(valid => {
+  datum_dogadaja: "",
+  vrijeme_dogadaja: "",
+  lokacija_dogadaja: "",
+  opis_dogadaja: ""
+
+});
+
+
+// Spremanje događaja
+function spremiDogadaj() {
+
+  forma.value.validate().then(async (valid) => {
+
     if (!valid) {
+
       Notify.create({
-        type: 'negative',
-        message: 'Molimo ispunite sva polja prije spremanja.'
-      })
-      return
+        type: "negative",
+        message: "Molimo ispunite sva polja."
+      });
+
+      return;
     }
 
-    axios.post('http://localhost:3000/api/dogadaji', {
-      Tip_dogadaja: dogadaj.value.tip,
-      Datum_vrijeme: dogadaj.value.datumVrijeme,
-      Lokacija: dogadaj.value.lokacija,
-      Opis: dogadaj.value.opis
-    }).then(() => {
+    try {
+
+      console.log("ŠALJEM:", dogadaj.value);
+
+      await axios.post(
+        "http://localhost:3000/api/dogadaji",
+        dogadaj.value
+      );
+
       Notify.create({
-        type: 'positive',
-        message: 'Događaj je uspješno spremljen.'
-      })
-      resetForme()
-    }).catch(() => {
+        type: "positive",
+        message: "Događaj je uspješno spremljen."
+      });
+
+      resetForme();
+
+    } catch (error) {
+
+      console.error("GREŠKA:", error);
+
       Notify.create({
-        type: 'negative',
-        message: 'Došlo je do greške prilikom spremanja.'
-      })
-    })
-  })
+        type: "negative",
+        message: "Greška pri spremanju događaja."
+      });
+
+    }
+
+  });
+
 }
 
-function resetForme () {
+
+// Reset forme
+function resetForme() {
+
   dogadaj.value = {
-    tip: '',
-    datumVrijeme: '',
-    lokacija: '',
-    opis: ''
-  }
-  forma.value.resetValidation()
+
+    datum_dogadaja: "",
+    vrijeme_dogadaja: "",
+    lokacija_dogadaja: "",
+    opis_dogadaja: ""
+
+  };
+
+  forma.value.resetValidation();
+
 }
 </script>
