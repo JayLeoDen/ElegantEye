@@ -24,44 +24,44 @@ connection.connect(err => {
 });
 
 app.get("/api/klijenti", (req, res) => {
-  connection.query("SELECT Sifra_klijenta FROM Klijent", (err, results) => {
+  connection.query("SELECT korisnik_id FROM rezervacija_korisnika", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
-    res.json(results.map(r => r.Sifra_klijenta));
+    res.json(results.map(r => r.korisnik_id));
   });
 });
 
 app.get("/api/dogadaji", (req, res) => {
-  connection.query("SELECT Sifra_dogadaja FROM Dogadaj", (err, results) => {
+  connection.query("SELECT dogadaj_id FROM rezervacija_korisnika", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
-    res.json(results.map(r => r.Sifra_dogadaja));
+    res.json(results.map(r => r.dogadaj_id));
   });
 });
 
 app.get("/api/usluge", (req, res) => {
-  connection.query("SELECT Usluga_ID FROM Usluga", (err, results) => {
+  connection.query("SELECT usluga_id FROM rezervacija_korisnika", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
-    res.json(results.map(r => r.Usluga_ID));
+    res.json(results.map(r => r.usluga_id));
   });
 });
 
 app.get("/api/rezervacije", (req, res) => {
-  connection.query("SELECT * FROM Rezervacija", (err, results) => {
+  connection.query("SELECT * FROM rezervacija_korisnika", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
     res.json(results);
   });
 });
 
 app.post("/api/rezervacije", (req, res) => {
-  const { Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena } = req.body;
+  const { korisnik_id, dogadaj_id, usluga_id, napomena_rezervacije } = req.body;
 
-  if (!Sifra_klijenta || !Sifra_dogadaja || !Usluga_ID) {
+  if (!korisnik_id || !dogadaj_id || !usluga_id) {
     return res.status(400).json({ error: "Obavezna polja: klijent, događaj i usluga" });
   }
 
   connection.query(
-    `INSERT INTO Rezervacija (Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena)
+    `INSERT INTO rezervacija_korisnika (korisnik_id, dogadaj_id, usluga_id, napomena_rezervacije)
      VALUES (?, ?, ?, ?)`,
-    [Number(Sifra_klijenta), Number(Sifra_dogadaja), Number(Usluga_ID), Napomena || null],
+    [Number(korisnik_id), Number(dogadaj_id), Number(usluga_id), napomena_rezervacije || null],
     (error, results) => {
       if (error) return res.status(500).json({ error: error.sqlMessage });
       res.json({ message: "Rezervacija dodana", id: results.insertId });
@@ -72,7 +72,7 @@ app.post("/api/rezervacije", (req, res) => {
 app.delete("/api/rezervacije/:id", (req, res) => {
   const id = Number(req.params.id);
   connection.query(
-    "DELETE FROM Rezervacija WHERE Sifra_rezervacije = ?",
+    "DELETE FROM rezervacija_korisnika WHERE rezervacija_id = ?",
     [id],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.sqlMessage });

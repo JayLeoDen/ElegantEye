@@ -7,16 +7,16 @@
 
       <q-card-section>
         <q-select
-          v-model="Sifra_klijenta"
-          label="Odaberi klijenta"
+          v-model="korisnik_id"
+          label="Odaberi korisnika"
           :options="klijenti"
           emit-value
           map-options
-          :rules="[val => !!val || 'Klijent je obavezan']"
+          :rules="[val => !!val || 'Korisnik je obavezan']"
         />
 
         <q-select
-          v-model="Sifra_dogadaja"
+          v-model="dogadaj_id"
           label="Odaberi događaj"
           :options="dogadaji"
           emit-value
@@ -25,7 +25,7 @@
         />
 
         <q-select
-          v-model="Usluga_ID"
+          v-model="usluga_id"
           label="Odaberi uslugu"
           :options="usluge"
           emit-value
@@ -54,9 +54,9 @@ export default {
   name: "UnosRezervacije",
   data() {
     return {
-      Sifra_klijenta: null,
-      Sifra_dogadaja: null,
-      Usluga_ID: null,
+      korisnik_id: null,
+      dogadaj_id: null,
+      usluga_id: null,
       Napomena: "",
       klijenti: [],
       dogadaji: [],
@@ -85,17 +85,17 @@ export default {
     },
 
     async dodajRezervaciju() {
-      if (!this.Sifra_klijenta || !this.Sifra_dogadaja || !this.Usluga_ID) {
+      if (!this.korisnik_id || !this.dogadaj_id || !this.usluga_id) {
         this.$q.notify({ type: "negative", message: "Popunite obavezna polja!" });
         return;
       }
 
       try {
         const res = await axios.post("http://localhost:3000/api/rezervacije", {
-          Sifra_klijenta: this.Sifra_klijenta,
-          Sifra_dogadaja: this.Sifra_dogadaja,
-          Usluga_ID: this.Usluga_ID,
-          Napomena: this.Napomena
+          korisnik_id: this.korisnik_id,
+          dogadaj_id: this.dogadaj_id,
+          usluga_id: this.usluga_id,
+          napomena_rezervacije: this.napomena_rezervacije
         });
 
         this.$q.notify({
@@ -103,10 +103,10 @@ export default {
           message: `Rezervacija dodana! ID: ${res.data.id}`
         });
 
-        this.Sifra_klijenta = null;
-        this.Sifra_dogadaja = null;
-        this.Usluga_ID = null;
-        this.Napomena = "";
+        this.korisnik_id = null;
+        this.dogadaj_id = null;
+        this.usluga_id = null;
+        this.napomena_rezervacije = "";
       } catch (err) {
         console.error(err);
         this.$q.notify({
