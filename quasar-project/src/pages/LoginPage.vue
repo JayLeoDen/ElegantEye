@@ -4,10 +4,11 @@
 
     <q-card flat bordered class="q-pa-md col-12 col-md-6">
       <q-form @submit.prevent="login">
+
         <q-input
           filled
-          v-model="korisnik.korisnicko_ime"
-          label="Korisničko ime"
+          v-model="korisnik.email"
+          label="Email"
           class="q-mb-md"
         />
 
@@ -24,6 +25,7 @@
           color="primary"
           type="submit"
         />
+
       </q-form>
     </q-card>
   </q-page>
@@ -39,21 +41,22 @@ const $q = useQuasar()
 const router = useRouter()
 
 const korisnik = ref({
-  korisnicko_ime: '',
+  email: '',
   lozinka: ''
 })
 
 async function login () {
-  if (!korisnik.value.korisnicko_ime || !korisnik.value.lozinka) {
-    $q.dialog({
-      message: 'Molimo unesite korisničko ime i lozinku'
+  if (!korisnik.value.email || !korisnik.value.lozinka) {
+    $q.notify({
+      type: 'negative',
+      message: 'Unesite email i lozinku'
     })
     return
   }
 
   try {
     const res = await axios.post('http://localhost:3000/login', {
-      korime: korisnik.value.korisnicko_ime,
+      email: korisnik.value.email,
       lozinka: korisnik.value.lozinka
     })
 
@@ -66,8 +69,9 @@ async function login () {
     }
 
   } catch (error) {
-    $q.dialog({
-      message: 'Neispravno korisničko ime ili lozinka'
+    $q.notify({
+      type: 'negative',
+      message: 'Neispravan email ili lozinka'
     })
     console.log(error)
   }

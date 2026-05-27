@@ -119,34 +119,38 @@ app.delete("/api/fotografi/:id", (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  const { korime, lozinka } = req.body;
+  const { email, lozinka } = req.body;
 
-  if (!korime || !lozinka) {
-    return res.status(400).json({ message: 'Nedostaje korime ili lozinka' });
+  if (!email || !lozinka) {
+    return res.status(400).json({ message: 'Nedostaje email ili lozinka' });
   }
 
-  const query = 'SELECT id, korime, lozinka, uloga FROM prijava WHERE korime = ?';
+  const query = `
+    SELECT administrator_id, email_adresa_administratora, lozinka_administratora
+    FROM administrator
+    WHERE email_adresa_administratora = ?
+  `;
 
-  connection.query(query, [korime], (err, results) => {
+  connection.query(query, [email], (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ message: 'Greška na serveru' });
     }
 
     if (results.length === 0) {
-      return res.status(401).json({ message: 'Korisnik ne postoji' });
+      return res.status(401).json({ message: 'Administrator ne postoji' });
     }
 
-    const user = results[0];
+    const admin = results[0];
 
-    if (user.lozinka !== lozinka) {
+    if (admin.lozinka_administratora !== lozinka) {
       return res.status(401).json({ message: 'Pogrešna lozinka' });
     }
 
     res.json({
-      id: user.id,
-      korime: user.korime,
-      uloga: user.uloga
+      id: admin.administrator_id,
+      email: admin.email_adresa_administratora,
+      uloga: 'admin'
     });
   });
 });
@@ -259,46 +263,89 @@ app.post("/api/registracija/:id/odobri", (req, res) => {
 });
 
 app.get("/api/klijenti2", (req, res) => {
-  connection.query("SELECT Sifra_klijenta FROM Klijent", (err, results) => {
-    if (err) return res.status(500).json({ error: err.sqlMessage });
-    res.json(results.map(r => r.Sifra_klijenta));
-  });
+  connection.query(
+    "SELECT korisnik_id, ime_korisnika, prezime_korisnika FROM korisnik",
+    (err, results) => {
+
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.sqlMessage });
+      }
+
+      res.json(results);
+    }
+  );
 });
 
 app.get("/api/dogadaji2", (req, res) => {
-  connection.query("SELECT Sifra_dogadaja FROM Dogadaj", (err, results) => {
-    if (err) return res.status(500).json({ error: err.sqlMessage });
-    res.json(results.map(r => r.Sifra_dogadaja));
-  });
+  connection.query(
+    "SELECT dogadaj_id, opis_dogadaja FROM dogadaj",
+    (err, results) => {
+
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.sqlMessage });
+      }
+
+      res.json(results);
+    }
+  );
 });
 
 app.get("/api/usluge2", (req, res) => {
-  connection.query("SELECT Usluga_ID FROM Usluga", (err, results) => {
-    if (err) return res.status(500).json({ error: err.sqlMessage });
-    res.json(results.map(r => r.Usluga_ID));
-  });
+  connection.query(
+    "SELECT usluga_id, naziv_nove_usluge FROM usluga",
+    (err, results) => {
+
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.sqlMessage });
+      }
+
+      res.json(results);
+    }
+  );
+});
+
+app.get("/api/fotografi", (req, res) => {
+  connection.query(
+    "SELECT fotograf_snimatelj_id, ime_fotografa_snimatelja, prezime_fotografa_snimatelja FROM snimatelj_fotograf",
+    (err, results) => {
+
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.sqlMessage });
+      }
+
+      res.json(results);
+    }
+  );
 });
 
 app.get("/api/rezervacije", (req, res) => {
-  connection.query("SELECT * FROM Rezervacija", (err, results) => {
+  connection.query("SELECT * FROM rezervacija_korisnika", (err, results) => {
     if (err) return res.status(500).json({ error: err.sqlMessage });
     res.json(results);
   });
 });
 
 app.post("/api/rezervacije", (req, res) => {
-  const { Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena } = req.body;
+  console.log("POST /rezervacije");
+  console.log("BODY:", req.body);
+  const { korisnik_id, dogadaj_id, usluga_id, fotograf_snimatelj_id, datum_nove_rezervacije, vrijeme_nove_rezervacije, napomena_rezervacije } = req.body;
 
-  if (!Sifra_klijenta || !Sifra_dogadaja || !Usluga_ID) {
-    return res.status(400).json({ error: "Obavezna polja: klijent, događaj i usluga" });
+  if (!korisnik_id || !dogadaj_id || !usluga_id || !fotograf_snimatelj_id || !datum_nove_rezervacije || !vrijeme_nove_rezervacije) {
+    return res.status(400).json({ error: "Obavezna polja: klijent, događaj, usluga, fotograf, datum i vrijeme" });
   }
 
   connection.query(
-    `INSERT INTO Rezervacija (Sifra_klijenta, Sifra_dogadaja, Usluga_ID, Napomena)
-     VALUES (?, ?, ?, ?)`,
-    [Number(Sifra_klijenta), Number(Sifra_dogadaja), Number(Usluga_ID), Napomena || null],
+    `INSERT INTO rezervacija_korisnika (korisnik_id, dogadaj_id, usluga_id, fotograf_snimatelj_id, datum_nove_rezervacije, vrijeme_nove_rezervacije, napomena_rezervacije)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [Number(korisnik_id), Number(dogadaj_id), Number(usluga_id),Number(fotograf_snimatelj_id),datum_nove_rezervacije, vrijeme_nove_rezervacije, napomena_rezervacije || null],
     (error, results) => {
-      if (error) return res.status(500).json({ error: error.sqlMessage });
+      if (error) {console.log("MYSQL ERROR FULL:", error);
+      return res.status(500).json({ error: error.sqlMessage });
+      }
       res.json({ message: "Rezervacija dodana", id: results.insertId });
     }
   );
@@ -307,7 +354,7 @@ app.post("/api/rezervacije", (req, res) => {
 app.delete("/api/rezervacije/:id", (req, res) => {
   const id = Number(req.params.id);
   connection.query(
-    "DELETE FROM Rezervacija WHERE Sifra_rezervacije = ?",
+    "DELETE FROM rezervacija_korisnika WHERE rezervacija_id = ?",
     [id],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.sqlMessage });

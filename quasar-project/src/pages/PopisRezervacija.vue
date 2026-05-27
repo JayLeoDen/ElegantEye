@@ -9,7 +9,7 @@
         <q-table
           :rows="rezervacije"
           :columns="columns"
-          row-key="Sifra_rezervacije"
+          row-key="rezervacija_id"
           flat
           bordered
         >
@@ -19,7 +19,7 @@
                 flat
                 icon="delete"
                 color="negative"
-                @click="obrisiRezervaciju(props.row.Sifra_rezervacije)"
+                @click="obrisiRezervaciju(props.row.rezervacija_id)"
               />
             </q-td>
           </template>
@@ -38,11 +38,11 @@ export default {
     return {
       rezervacije: [],
       columns: [
-        { name: "Sifra_rezervacije", label: "Šifra rezervacije", field: "Sifra_rezervacije", align: "left" },
-        { name: "Sifra_klijenta", label: "Šifra klijenta", field: "Sifra_klijenta", align: "left" },
-        { name: "Sifra_dogadaja", label: "Šifra događaja", field: "Sifra_dogadaja", align: "left" },
-        { name: "Usluga_ID", label: "Usluga ID", field: "Usluga_ID", align: "left" },
-        { name: "Napomena", label: "Napomena", field: "Napomena", align: "left" },
+        { name: "rezervacija_id", label: "ID rezervacije", field: "rezervacija_id", align: "left" },
+        { name: "korisnik_id", label: "ID klijenta", field: "korisnik_id", align: "left" },
+        { name: "dogadaj_id", label: "ID događaja", field: "dogadaj_id", align: "left" },
+        { name: "usluga_id", label: "ID usluge", field: "usluga_id", align: "left" },
+        { name: "napomena_rezervacije", label: "Napomena", field: "napomena_rezervacije", align: "left" },
         { name: "actions", label: "Akcije", field: "actions", align: "center" }
       ]
     };
