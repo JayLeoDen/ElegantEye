@@ -1,1 +1,17 @@
-// app global css in SCSS form
+:root { --ee-border:#dce6f2; --ee-soft:#f7fbff; --ee-blue:#2f80ed; --ee-green:#2fbf71; --ee-dark:#213047; }
+body { background:#f5f8fc; color:var(--ee-dark); }
+.ee-page { max-width: 1180px; margin: 0 auto; padding: 24px; }
+.mock-window { background:white; border:1px solid var(--ee-border); border-radius:18px; box-shadow:0 8px 24px rgba(24,43,77,.06); overflow:hidden; margin-bottom:24px; }
+.mock-title { text-align:center; font-weight:800; font-size:22px; margin:18px 0 12px; }
+.mock-bar { height:42px; background:#dfe5ec; display:flex; align-items:center; gap:8px; padding:0 16px; font-weight:700; color:#334155; }
+.mock-dot { width:10px; height:10px; border-radius:50%; background:#9aacbf; display:inline-block; }
+.mock-content { padding:20px; }
+.hero-box { background:linear-gradient(110deg,#edf7ff,#effff4); border:1px dashed #9bd1ff; border-radius:16px; padding:34px 18px; text-align:center; }
+.hero-box h1 { margin:0 0 8px; font-size:28px; font-weight:800; }
+.card-line { border:1px solid var(--ee-border); border-radius:14px; background:white; padding:16px; margin-top:12px; }
+.card-line:hover { box-shadow:0 6px 18px rgba(47,128,237,.09); }
+.page-heading { font-size:30px; font-weight:900; margin:0 0 6px; }
+.subtle { color:#64748b; }
+.ee-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:16px; }
+.status-pill { border-radius:999px; padding:4px 10px; background:#eef6ff; color:#2563eb; font-weight:700; font-size:12px; }
+@media(max-width:700px){ .ee-page{padding:12px}.mock-title{font-size:18px}.hero-box h1{font-size:22px} }

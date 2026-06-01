@@ -1,526 +1,283 @@
-const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const mysql = require("mysql2");
+const express = require('express')
+const cors = require('cors')
+const mysql = require('mysql2/promise')
 
-const app = express();
-const port = 3000;
+const app = express()
+const port = process.env.PORT || 3000
 
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
-const connection = mysql.createConnection({
-  host: "ucka.veleri.hr",
-  user: "szaharija",
-  password: "11",
-  database: "szaharija",
-  port: 3306
-});
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'ucka.veleri.hr',
+  user: process.env.DB_USER || 'szaharija',
+  password: process.env.DB_PASSWORD || '11',
+  database: process.env.DB_NAME || 'szaharija',
+  port: Number(process.env.DB_PORT || 3306),
+  waitForConnections: true,
+  connectionLimit: 10,
+  namedPlaceholders: true
+})
 
-connection.connect(err => {
-  if (err) throw err;
-  console.log("Connected to DB");
-});
+const ok = (res, data = {}) => res.json(data)
+const fail = (res, error, code = 500) => {
+  console.error(error)
+  res.status(code).json({ error: error.sqlMessage || error.message || error })
+}
 
-app.get("/api/fotografi", (req, res) => {
-  connection.query("SELECT * FROM snimatelj_fotograf", (error, results) => {
-    if (error) throw error;
-    res.json(results);
-  });
-});
+async function q(sql, params = []) {
+  const [rows] = await pool.query(sql, params)
+  return rows
+}
 
-app.get("/api/fotografi/:id", (req, res) => {
-  const id = req.params.id;
-  connection.query(
-    "SELECT * FROM snimatelj_fotograf WHERE fotograf_snimatelj_id = ?",
-    [id],
-    (error, results) => {
-      if (error) throw error;
-      res.json(results[0]);
+function token(payload) {
+  return Buffer.from(JSON.stringify({ ...payload, ts: Date.now() })).toString('base64url')
+}
+
+app.get('/api/health', async (req, res) => {
+  try { await q('SELECT 1'); ok(res, { status: 'OK' }) } catch (e) { fail(res, e) }
+})
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { ime, prezime, email, lozinka, uloga, opis_rada } = req.body
+    if (!ime || !prezime || !email || !lozinka || !uloga) return fail(res, 'Sva polja su obavezna', 400)
+    if (uloga === 'fotograf') {
+      const r = await q(`INSERT INTO snimatelj_fotograf
+        (ime_fotografa_snimatelja, prezime_fotografa_snimatelja, email_adresa_fotografa_snimatelja, lozinka_fotografa_snimatelja, opis_rada_fotografa_snimatelja)
+        VALUES (?, ?, ?, ?, ?)`, [ime, prezime, email, lozinka, opis_rada || ''])
+      return ok(res, { message: 'Fotograf/snimatelj registriran', id: r.insertId })
     }
-  );
-});
+    const r = await q(`INSERT INTO korisnik
+      (ime_korisnika, prezime_korisnika, email_adresa_korisnika, lozinka_korisnika)
+      VALUES (?, ?, ?, ?)`, [ime, prezime, email, lozinka])
+    ok(res, { message: 'Korisnik registriran', id: r.insertId })
+  } catch (e) { fail(res, e) }
+})
 
-app.post("/api/fotografi", (req, res) => {
-  const {
-    ime,
-    prezime,
-    email,
-    lozinka,
-    opis
-  } = req.body;
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, lozinka } = req.body
+    if (!email || !lozinka) return fail(res, 'Nedostaje email ili lozinka', 400)
 
-  if (!ime || !prezime) {
-    return res.status(400).json({ error: "Ime i prezime su obavezni" });
+    const admins = await q(`SELECT administrator_id id, email_adresa_administratora email, lozinka_administratora lozinka FROM administrator WHERE email_adresa_administratora=?`, [email])
+    if (admins[0] && admins[0].lozinka === lozinka) return ok(res, { token: token({ id: admins[0].id, uloga: 'admin' }), user: { id: admins[0].id, email, uloga: 'admin', ime: 'Administrator' } })
+
+    const korisnici = await q(`SELECT korisnik_id id, ime_korisnika ime, prezime_korisnika prezime, email_adresa_korisnika email, lozinka_korisnika lozinka FROM korisnik WHERE email_adresa_korisnika=?`, [email])
+    if (korisnici[0] && korisnici[0].lozinka === lozinka) return ok(res, { token: token({ id: korisnici[0].id, uloga: 'korisnik' }), user: { id: korisnici[0].id, ime: korisnici[0].ime, prezime: korisnici[0].prezime, email, uloga: 'korisnik' } })
+
+    const fotografi = await q(`SELECT fotograf_snimatelj_id id, ime_fotografa_snimatelja ime, prezime_fotografa_snimatelja prezime, email_adresa_fotografa_snimatelja email, lozinka_fotografa_snimatelja lozinka FROM snimatelj_fotograf WHERE email_adresa_fotografa_snimatelja=?`, [email])
+    if (fotografi[0] && fotografi[0].lozinka === lozinka) return ok(res, { token: token({ id: fotografi[0].id, uloga: 'fotograf' }), user: { id: fotografi[0].id, ime: fotografi[0].ime, prezime: fotografi[0].prezime, email, uloga: 'fotograf' } })
+
+    fail(res, 'Pogrešni podaci za prijavu', 401)
+  } catch (e) { fail(res, e) }
+})
+
+app.post('/login', (req, res) => app._router.handle({ ...req, url: '/api/auth/login', method: 'POST' }, res))
+
+app.get('/api/usluge', async (req, res) => {
+  try {
+    const rows = await q(`SELECT usluga_id, naziv_nove_usluge naziv, opis_nove_usluge opis, cijena_nove_usluge cijena, trajanje_nove_usluge trajanje FROM usluga ORDER BY usluga_id DESC`)
+    ok(res, rows)
+  } catch (e) {
+    try {
+      const rows = await q(`SELECT Usluga_ID usluga_id, Tip_usluge naziv, Opis_usluge opis, Cijena_usluge cijena, '' trajanje FROM Usluga ORDER BY Usluga_ID DESC`)
+      ok(res, rows)
+    } catch (err) { fail(res, err) }
   }
+})
 
-  connection.query(
-    `INSERT INTO snimatelj_fotograf
-     (ime_fotografa_snimatelja,
-      prezime_fotografa_snimatelja,
-      email_adresa_fotografa_snimatelja,
-      lozinka_fotografa_snimatelja,
-      opis_rada_fotografa_snimatelja
+app.post('/api/usluge', async (req, res) => {
+  try {
+    const { naziv, opis, cijena, trajanje, tip } = req.body
+    const r = await q(` INSERT INTO usluga ( naziv_nove_usluge, opis_nove_usluge, cijena_nove_usluge, trajanje_nove_usluge, naziv_dostupne_usluge, opis_dostupne_usluge, cijena_dostupne_usluge, trajanje_dostupne_usluge ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [ naziv || tip, opis || '', cijena || 0, trajanje || '00:00:00', naziv || tip, opis || '', cijena || 0, trajanje || '00:00:00'])
+    ok(res, { message: 'Usluga spremljena', id: r.insertId })
+  } catch (e) { fail(res, e) }
+})
+
+app.put('/api/usluge/:id', async (req, res) => {
+  try {
+    const { naziv, opis, cijena, trajanje } = req.body
+    await q(`UPDATE usluga SET naziv_nove_usluge=?, opis_nove_usluge=?, cijena_nove_usluge=?, trajanje_nove_usluge=? WHERE usluga_id=?`, [naziv, opis, cijena, trajanje, req.params.id])
+    ok(res, { message: 'Usluga ažurirana' })
+  } catch (e) { fail(res, e) }
+})
+
+app.delete('/api/usluge/:id', async (req, res) => {
+  try { await q('DELETE FROM usluga WHERE usluga_id=?', [req.params.id]); ok(res, { message: 'Usluga obrisana' }) } catch (e) { fail(res, e) }
+})
+
+app.get('/api/fotografi', async (req, res) => {
+  try {
+    const rows = await q(`
+      SELECT
+        fotograf_snimatelj_id,
+        ime_fotografa_snimatelja ime,
+        prezime_fotografa_snimatelja prezime,
+        email_adresa_fotografa_snimatelja email,
+        opis_rada_fotografa_snimatelja opis_rada,
+        4.8 ocjena
+      FROM snimatelj_fotograf
+      ORDER BY fotograf_snimatelj_id DESC
+    `)
+
+    ok(res, rows) } catch (e) { fail(res, e)}
+})
+
+app.post('/api/fotografi', async (req, res) => {
+  try {
+    const { ime, prezime, email, lozinka, opis_rada, opis } = req.body
+    const r = await q(`INSERT INTO snimatelj_fotograf (ime_fotografa_snimatelja, prezime_fotografa_snimatelja, email_adresa_fotografa_snimatelja, lozinka_fotografa_snimatelja, opis_rada_fotografa_snimatelja) VALUES (?, ?, ?, ?, ?)`, [ime, prezime, email, lozinka || '1234', opis_rada || opis || ''])
+    ok(res, { message: 'Fotograf spremljen', id: r.insertId })
+  } catch (e) { fail(res, e) }
+})
+
+app.put('/api/fotografi/:id', async (req, res) => {
+  try {
+    const { ime, prezime, email, opis_rada } = req.body
+    await q(`UPDATE snimatelj_fotograf SET ime_fotografa_snimatelja=?, prezime_fotografa_snimatelja=?, email_adresa_fotografa_snimatelja=?, opis_rada_fotografa_snimatelja=? WHERE fotograf_snimatelj_id=?`, [ime, prezime, email, opis_rada, req.params.id])
+    ok(res, { message: 'Fotograf ažuriran' })
+  } catch (e) { fail(res, e) }
+})
+
+app.delete('/api/fotografi/:id', async (req, res) => {
+  try { await q('DELETE FROM snimatelj_fotograf WHERE fotograf_snimatelj_id=?', [req.params.id]); ok(res, { message: 'Fotograf obrisan' }) } catch (e) { fail(res, e) }
+})
+
+app.get('/api/korisnici', async (req, res) => {
+  try { ok(res, await q('SELECT korisnik_id, ime_korisnika ime, prezime_korisnika prezime, email_adresa_korisnika email FROM korisnik ORDER BY korisnik_id DESC')) } catch (e) { fail(res, e) }
+})
+
+app.get('/api/portfolio', async (req, res) => {
+  try {
+    const where = req.query.fotograf_id ? 'WHERE p.fotograf_snimatelj_id=?' : ''
+    const rows = await q(`SELECT p.*, f.ime_fotografa_snimatelja ime, f.prezime_fotografa_snimatelja prezime FROM portfolio_stavka p LEFT JOIN snimatelj_fotograf f ON f.fotograf_snimatelj_id=p.fotograf_snimatelj_id ${where} ORDER BY p.portfolio_id DESC`, req.query.fotograf_id ? [req.query.fotograf_id] : [])
+    ok(res, rows)
+  } catch (e) { ok(res, []) }
+})
+
+app.post('/api/portfolio', async (req, res) => {
+  try {
+    const { fotograf_snimatelj_id, naziv_rada, opis_rada, medij } = req.body
+    const r = await q(`INSERT INTO portfolio_stavka (fotograf_snimatelj_id, naziv_rada, opis_rada, medij, datum_objave) VALUES (?, ?, ?, ?, CURDATE())`, [fotograf_snimatelj_id, naziv_rada, opis_rada || '', medij || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=900'])
+    ok(res, { message: 'Portfolio spremljen', id: r.insertId })
+  } catch (e) { fail(res, e) }
+})
+
+
+app.put('/api/portfolio/:id', async (req, res) => {
+  try {
+    const { naziv_rada, opis_rada, medij } = req.body
+    await q('UPDATE portfolio_stavka SET naziv_rada=?, opis_rada=?, medij=?, datum_izmjene=CURDATE() WHERE portfolio_id=?', [naziv_rada, opis_rada || '', medij, req.params.id])
+    ok(res, { message: 'Portfolio ažuriran' })
+  } catch (e) { fail(res, e) }
+})
+
+app.delete('/api/portfolio/:id', async (req, res) => {
+  try { await q('DELETE FROM portfolio_stavka WHERE portfolio_id=?', [req.params.id]); ok(res, { message: 'Portfolio obrisan' }) } catch (e) { fail(res, e) }
+})
+
+app.get('/api/rezervacije', async (req, res) => {
+  try {
+    const cond = []
+    const params = []
+    if (req.query.korisnik_id) { cond.push('r.korisnik_id=?'); params.push(req.query.korisnik_id) }
+    if (req.query.fotograf_snimatelj_id) { cond.push('r.fotograf_snimatelj_id=?'); params.push(req.query.fotograf_snimatelj_id) }
+    const where = cond.length ? `WHERE ${cond.join(' AND ')}` : ''
+    const rows = await q(`SELECT r.*, k.ime_korisnika, k.prezime_korisnika, f.ime_fotografa_snimatelja, f.prezime_fotografa_snimatelja,
+      u.naziv_nove_usluge naziv_usluge, d.opis_dogadaja, d.lokacija_dogadaja
+      FROM rezervacija_korisnika r
+      LEFT JOIN korisnik k ON k.korisnik_id=r.korisnik_id
+      LEFT JOIN snimatelj_fotograf f ON f.fotograf_snimatelj_id=r.fotograf_snimatelj_id
+      LEFT JOIN usluga u ON u.usluga_id=r.usluga_id
+      LEFT JOIN dogadaj d ON d.dogadaj_id=r.dogadaj_id
+      ${where} ORDER BY r.rezervacija_id DESC`, params)
+    ok(res, rows)
+  } catch (e) { fail(res, e) }
+})
+
+app.post('/api/rezervacije', async (req, res) => {
+  const c = await pool.getConnection()
+  try {
+    await c.beginTransaction()
+    const b = req.body
+    let dogadajId = b.dogadaj_id
+    if (!dogadajId) {
+      const [dr] = await c.query(`INSERT INTO dogadaj (datum_dogadaja, vrijeme_dogadaja, lokacija_dogadaja, opis_dogadaja) VALUES (?, ?, ?, ?)`, [b.datum_dogadaja || b.datum_nove_rezervacije, b.vrijeme_dogadaja || b.vrijeme_nove_rezervacije, b.lokacija_dogadaja || '', b.opis_dogadaja || 'Događaj'])
+      dogadajId = dr.insertId
+    }
+    const [r] = await c.query(`INSERT INTO rezervacija_korisnika (korisnik_id, dogadaj_id, usluga_id, fotograf_snimatelj_id, datum_nove_rezervacije, vrijeme_nove_rezervacije, napomena_rezervacije) VALUES (?, ?, ?, ?, ?, ?, ?)`, [b.korisnik_id, dogadajId, b.usluga_id, b.fotograf_snimatelj_id, b.datum_nove_rezervacije || b.datum_dogadaja, b.vrijeme_nove_rezervacije || b.vrijeme_dogadaja, b.napomena_rezervacije || ''])
+    await c.query(`INSERT INTO obavijest (fotograf_snimatelj_id, rezervacija_id, datum_obavijesti, vrijeme_obavijesti, status_obavijesti) VALUES (?, ?, CURDATE(), CURTIME(), 'nova')`, [b.fotograf_snimatelj_id, r.insertId]).catch(() => {})
+    await c.commit(); ok(res, { message: 'Rezervacija kreirana', id: r.insertId })
+  } catch (e) { await c.rollback(); fail(res, e) } finally { c.release() }
+})
+
+app.put('/api/rezervacije/:id/status', async (req, res) => {
+  try { await q('UPDATE rezervacija_korisnika SET status_rezervacije=? WHERE rezervacija_id=?', [req.body.status, req.params.id]); ok(res, { message: 'Status ažuriran' }) } catch (e) { fail(res, e) }
+})
+
+app.delete('/api/rezervacije/:id', async (req, res) => {
+  try { await q('DELETE FROM rezervacija_korisnika WHERE rezervacija_id=?', [req.params.id]); ok(res, { message: 'Rezervacija obrisana' }) } catch (e) { fail(res, e) }
+})
+
+app.get('/api/dostupnost', async (req, res) => {
+  try { ok(res, await q('SELECT * FROM dostupnost WHERE (? IS NULL OR fotograf_snimatelj_id=?) ORDER BY datum_dostupnosti DESC', [req.query.fotograf_snimatelj_id || null, req.query.fotograf_snimatelj_id || null])) } catch (e) { ok(res, []) }
+})
+
+app.post('/api/dostupnost', async (req, res) => {
+  try {
+    const b = req.body
+    const r = await q('INSERT INTO dostupnost (fotograf_snimatelj_id, datum_dostupnosti, vrijeme_dostupnosti, status_dostupnosti) VALUES (?, ?, ?, ?)', [b.fotograf_snimatelj_id, b.datum_dostupnosti, b.vrijeme_dostupnosti, b.status_dostupnosti || 'slobodan'])
+    ok(res, { message: 'Dostupnost spremljena', id: r.insertId })
+  } catch (e) { fail(res, e) }
+})
+
+app.get('/api/poruke', async (req, res) => {
+  try { ok(res, await q('SELECT * FROM poruka_napomena WHERE (? IS NULL OR rezervacija_id=?) ORDER BY poruka_id DESC', [req.query.rezervacija_id || null, req.query.rezervacija_id || null])) } catch (e) { ok(res, []) }
+})
+
+app.post('/api/poruke', async (req, res) => {
+  try {
+    const b = req.body
+    const r = await q(`INSERT INTO poruka_napomena (rezervacija_id, administrator_id, korisnik_id, fotograf_snimatelj_id, sadrzaj, datum, vrijeme, tip_poruke) VALUES (?, ?, ?, ?, ?, CURDATE(), CURTIME(), ?)`, [b.rezervacija_id, b.administrator_id || null, b.korisnik_id || null, b.fotograf_snimatelj_id || null, b.sadrzaj, b.tip_poruke || 'napomena_rezervacije'])
+    ok(res, { message: 'Poruka spremljena', id: r.insertId })
+  } catch (e) { fail(res, e) }
+})
+
+app.post('/api/povratne-informacije', async (req, res) => {
+  try {
+    const b = req.body
+
+    const r = await q(`
+      INSERT INTO povratne_informacije (
+        korisnik_id,
+        usluga_id,
+        ocjena_povratne_informacije,
+        komentar_povratne_informacije,
+        datum_povratne_informacije
       )
-     VALUES (?, ?, ?, ?, ?)`,
-    [ime, prezime, email, lozinka, opis || null],
-    (error, results) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Greška pri unosu" });
-      }
+      VALUES (?, ?, ?, ?, CURDATE())
+    `, [
+      b.korisnik_id,
+      b.usluga_id,
+      b.ocjena,
+      b.komentar || ''
+    ])
 
-      res.status(201).json({
-        message: "Fotograf dodan",
-        fotograf_snimatelj_id: results.insertId
-      });
-    }
-  );
-});
-
-
-app.put("/api/fotografi/:id", (req, res) => {
-  const id = req.params.id;
-  const { ime, prezime, email, lozinka, opis } = req.body;
-
-  connection.query(
-    `UPDATE snimatelj_fotograf
-     SET ime_fotografa_snimatelja=?,
-      prezime_fotografa_snimatelja=?,
-      email_adresa_fotografa_snimatelja=?,
-      lozinka_fotografa_snimatelja=?,
-      opis_rada_fotografa_snimatelja=?
-     WHERE fotograf_snimatelj_id=?`,
-    [ime, prezime, email, lozinka, opis || null, id],
-    (error, results) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Greška pri ažuriranju" });
-      }
-      res.json({ message: "Fotograf ažuriran" });
-    }
-  );
-});
-
-app.delete("/api/fotografi/:id", (req, res) => {
-  const id = req.params.id;
-  connection.query(
-    "DELETE FROM snimatelj_fotograf WHERE fotograf_snimatelj_id = ?",
-    [id],
-    (error, results) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Greška pri brisanju" });
-      }
-      res.json({ message: "Fotograf obrisan" });
-    }
-  );
-});
-
-app.post('/login', (req, res) => {
-  const { email, lozinka } = req.body;
-
-  if (!email || !lozinka) {
-    return res.status(400).json({ message: 'Nedostaje email ili lozinka' });
+    ok(res, { message: 'Recenzija spremljena', id: r.insertId })
+  } catch (e) {
+    fail(res, e)
   }
+})
 
-  const query = `
-    SELECT administrator_id, email_adresa_administratora, lozinka_administratora
-    FROM administrator
-    WHERE email_adresa_administratora = ?
-  `;
+app.get('/api/reports/summary', async (req, res) => {
+  try {
+    const [[korisnici], [fotografi], [usluge], [rezervacije], [ocjena]] = await Promise.all([
+      q('SELECT COUNT(*) broj FROM korisnik'), q('SELECT COUNT(*) broj FROM snimatelj_fotograf'), q('SELECT COUNT(*) broj FROM usluga'), q('SELECT COUNT(*) broj FROM rezervacija_korisnika'), q('SELECT ROUND(AVG(ocjena_povratne_informacije),1) broj FROM povratne_informacije')
+    ])
+    ok(res, { korisnici: korisnici.broj, fotografi: fotografi.broj, usluge: usluge.broj, rezervacije: rezervacije.broj, prosjecna_ocjena: ocjena.broj || 0 })
+  } catch (e) { fail(res, e) }
+})
 
-  connection.query(query, [email], (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: 'Greška na serveru' });
-    }
-
-    if (results.length === 0) {
-      return res.status(401).json({ message: 'Administrator ne postoji' });
-    }
-
-    const admin = results[0];
-
-    if (admin.lozinka_administratora !== lozinka) {
-      return res.status(401).json({ message: 'Pogrešna lozinka' });
-    }
-
-    res.json({
-      id: admin.administrator_id,
-      email: admin.email_adresa_administratora,
-      uloga: 'admin'
-    });
-  });
-});
-
-app.get("/api/registracija", (req, res) => {
-  connection.query(
-    "SELECT * FROM registracija",
-    (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Greška pri dohvaćanju" });
-      }
-      res.json(results);
-    }
-  );
-});
-
-
-app.post("/api/registracija", (req, res) => {
-  const { ime, prezime, email, korime, lozinka } = req.body;
-
-  if (!ime || !prezime || !korime || !lozinka || !email) {
-    return res.status(400).json({ error: "Sva polja su obavezna" });
-  }
-
-  connection.query(
-    `INSERT INTO registracija (ime, prezime, korime, lozinka, email)
-     VALUES (?, ?, ?, ?, ?)`,
-    [ime, prezime, korime, lozinka, email],
-    (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Greška pri unosu" });
-      }
-      res.json({ message: "Korisnik registriran" });
-    }
-  );
-});
-
-
-app.post("/api/registracija/:id/odobri", (req, res) => {
-  const { id } = req.params;
-  const { uloga } = req.body;
-
-  if (!uloga) {
-    return res.status(400).json({ error: "Uloga je obavezna" });
-  }
-
-  connection.query(
-    "SELECT * FROM registracija WHERE id = ?",
-    [id],
-    (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Greška pri dohvaćanju korisnika" });
-      }
-
-      if (results.length === 0) {
-        return res.status(404).json({ error: "Korisnik ne postoji" });
-      }
-
-      const korisnik = results[0];
-
-      connection.query(
-        "SELECT id FROM prijava WHERE korime = ?",
-        [korisnik.korime],
-        (err2, postoji) => {
-          if (err2) {
-            console.error(err2);
-            return res.status(500).json({ error: "Greška pri provjeri korisnika" });
-          }
-
-          if (postoji.length > 0) {
-            return res.status(400).json({
-              error: "Korisnik već postoji u sustavu"
-            });
-          }
-
-          connection.query(
-  "INSERT INTO prijava (ime, prezime, korime, lozinka, email, uloga) VALUES (?, ?, ?, ?, ?, ?)",
-  [
-    korisnik.ime, korisnik.prezime, korisnik.korime, korisnik.lozinka, korisnik.email, uloga
-  ],
-  (err3) => {
-    if (err3) {
-      console.error(err3);
-      return res.status(500).json({ error: "Greška pri upisu u prijava" });
-    }
-
-              connection.query(
-                "DELETE FROM registracija WHERE id = ?",
-                [id],
-                (err4) => {
-                  if (err4) {
-                    console.error(err4);
-                    return res.status(500).json({ error: "Greška pri brisanju iz registracija" });
-                  }
-
-                  res.json({
-                    message: "Korisnik uspješno odobren"
-                  });
-                }
-              );
-            }
-          );
-        }
-      );
-    }
-  );
-});
-
-app.get("/api/klijenti2", (req, res) => {
-  connection.query(
-    "SELECT korisnik_id, ime_korisnika, prezime_korisnika FROM korisnik",
-    (err, results) => {
-
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: err.sqlMessage });
-      }
-
-      res.json(results);
-    }
-  );
-});
-
-app.get("/api/dogadaji2", (req, res) => {
-  connection.query(
-    "SELECT dogadaj_id, opis_dogadaja FROM dogadaj",
-    (err, results) => {
-
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: err.sqlMessage });
-      }
-
-      res.json(results);
-    }
-  );
-});
-
-app.get("/api/usluge2", (req, res) => {
-  connection.query(
-    "SELECT usluga_id, naziv_nove_usluge FROM usluga",
-    (err, results) => {
-
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: err.sqlMessage });
-      }
-
-      res.json(results);
-    }
-  );
-});
-
-app.get("/api/fotografi", (req, res) => {
-  connection.query(
-    "SELECT fotograf_snimatelj_id, ime_fotografa_snimatelja, prezime_fotografa_snimatelja FROM snimatelj_fotograf",
-    (err, results) => {
-
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: err.sqlMessage });
-      }
-
-      res.json(results);
-    }
-  );
-});
-
-app.get("/api/rezervacije", (req, res) => {
-  connection.query("SELECT * FROM rezervacija_korisnika", (err, results) => {
-    if (err) return res.status(500).json({ error: err.sqlMessage });
-    res.json(results);
-  });
-});
-
-app.post("/api/rezervacije", (req, res) => {
-  console.log("POST /rezervacije");
-  console.log("BODY:", req.body);
-  const { korisnik_id, dogadaj_id, usluga_id, fotograf_snimatelj_id, datum_nove_rezervacije, vrijeme_nove_rezervacije, napomena_rezervacije } = req.body;
-
-  if (!korisnik_id || !dogadaj_id || !usluga_id || !fotograf_snimatelj_id || !datum_nove_rezervacije || !vrijeme_nove_rezervacije) {
-    return res.status(400).json({ error: "Obavezna polja: klijent, događaj, usluga, fotograf, datum i vrijeme" });
-  }
-
-  connection.query(
-    `INSERT INTO rezervacija_korisnika (korisnik_id, dogadaj_id, usluga_id, fotograf_snimatelj_id, datum_nove_rezervacije, vrijeme_nove_rezervacije, napomena_rezervacije)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [Number(korisnik_id), Number(dogadaj_id), Number(usluga_id),Number(fotograf_snimatelj_id),datum_nove_rezervacije, vrijeme_nove_rezervacije, napomena_rezervacije || null],
-    (error, results) => {
-      if (error) {console.log("MYSQL ERROR FULL:", error);
-      return res.status(500).json({ error: error.sqlMessage });
-      }
-      res.json({ message: "Rezervacija dodana", id: results.insertId });
-    }
-  );
-});
-
-app.delete("/api/rezervacije/:id", (req, res) => {
-  const id = Number(req.params.id);
-  connection.query(
-    "DELETE FROM rezervacija_korisnika WHERE rezervacija_id = ?",
-    [id],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.sqlMessage });
-      res.json({ message: "Rezervacija obrisana" });
-    }
-  );
-});
-
-app.get("/api/dogadaji", (req, res) => {
-  connection.query(
-    "SELECT * FROM Dogadaj ORDER BY Datum_i_vrijeme_dogadaja DESC",
-    (error, results) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Greška pri dohvaćanju" });
-      }
-      res.json(results);
-    }
-  );
-});
-
-app.post("/api/dogadaji", (req, res) => {
-  const {
-    tip,
-    datumVrijeme,
-    lokacija,
-    opis
-  } = req.body;
-
-  connection.query(
-    `INSERT INTO Dogadaj
-     (Tip_dogadaja, Datum_i_vrijeme_dogadaja,
-      Lokacija_dogadaja, Opis_dogadaja)
-     VALUES (?, ?, ?, ?)`,
-    [
-      tip || null,
-      datumVrijeme || null,
-      lokacija || null,
-      opis || null
-    ],
-    (error, result) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Greška pri unosu događaja" });
-      }
-
-      res.json({
-        message: "Događaj uspješno dodan",
-        id: result.insertId
-      });
-    }
-  );
-});
-
-app.get("/api/usluge", (req, res) => {
-  connection.query("SELECT * FROM Usluga", (err, results) => {
-    if (err) {
-      console.error("Greška u SQL-u:", err);
-      return res.status(500).json({ error: "Greška pri dohvaćanju" });
-    }
-    res.json(results);
-  });
-});
-
-
-app.post("/api/usluge", (req, res) => {
-  const { tip, cijena, opis } = req.body;
-
-  if (!tip) {
-    return res.status(400).json({ error: "Tip usluge je obavezan" });
-  }
-
-  const sql = `
-    INSERT INTO Usluga (Tip_usluge, Cijena_usluge, Opis_usluge)
-    VALUES (?, ?, ?)
-  `;
-
-  connection.query(
-    sql,
-    [tip, cijena || null, opis || null],
-    (err, results) => {
-      if (err) {
-        console.error("Greška u SQL-u:", err);
-        return res.status(500).json({ error: "Greška pri unosu" });
-      }
-
-      res.json({
-        message: "Usluga dodana",
-        insertedId: results.insertId
-      });
-    }
-  );
-});
-
-
-app.put("/api/usluge/:id", (req, res) => {
-  const id = req.params.id;
-  const { tip, cijena, opis } = req.body;
-
-  const sql = `
-    UPDATE Usluga
-    SET Tip_usluge = ?, Cijena_usluge = ?, Opis_usluge = ?
-    WHERE Usluga_ID = ?
-  `;
-
-  connection.query(
-    sql,
-    [tip, cijena || null, opis || null, id],
-    (err, results) => {
-      if (err) {
-        console.error("Greška u SQL-u:", err);
-        return res.status(500).json({ error: "Greška pri ažuriranju" });
-      }
-      res.json({ message: "Usluga ažurirana" });
-    }
-  );
-});
-
-
-app.delete("/api/usluge/:id", (req, res) => {
-  const id = req.params.id;
-
-  connection.query(
-    "DELETE FROM Usluga WHERE Usluga_ID = ?",
-    [id],
-    (err, results) => {
-      if (err) {
-        console.error("Greška u SQL-u:", err);
-        return res.status(500).json({ error: "Greška pri brisanju" });
-      }
-      res.json({ message: "Usluga obrisana" });
-    }
-  );
-});
-
-app.get('/klijent', (req, res) => {
-  connection.query('SELECT * FROM Klijent ORDER BY Sifra_klijenta DESC', (err, results) => {
-    if (err) return res.status(500).json(err);
-    res.json(results);
-  });
-});
-
-app.post('/klijent', (req, res) => {
-  const {
-    Ime_i_prezime_klijenta,
-    Email_klijenta,
-    Broj_telefona_klijenta,
-    Status_klijenta
-  } = req.body;
-
-  const sql = `
-    INSERT INTO Klijent
-    (Ime_i_prezime_klijenta, Email_klijenta, Broj_telefona_klijenta, Status_klijenta)
-    VALUES (?, ?, ?, ?)
-  `;
-
-  connection.query(
-    sql,
-    [Ime_i_prezime_klijenta, Email_klijenta, Broj_telefona_klijenta, Status_klijenta],
-    (err, result) => {
-      if (err) return res.status(500).json(err);
-      res.json({ Sifra_klijenta: result.insertId });
-    }
-  );
-});
-
-app.listen(port, () => {
-  console.log("Server running at port: " + port);
-});
+app.listen(port, () => console.log(`Elegant Eye API running on http://localhost:${port}`))

@@ -3,54 +3,52 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/IndexPage.vue') },
-      { path: 'login', component: () => import('pages/LoginPage.vue') },
-      { path: 'registracija', component: () => import('pages/RegistracijaPage.vue') },
-      { path: 'popisfoto', component: () => import('pages/PopisFotografa.vue') },
-      { path: 'Popisdogadaja', component: () => import('pages/DogadajList.vue') },
-      { path: 'popisrez', component: () => import('pages/PopisRezervacija.vue') },
-      { path: 'popisusluga', component: () => import('pages/PopisUsluga.vue') },
-      { path: 'prikazkorisnika', component: () => import('pages/PrikazKorisnika.vue') }
+      { path: '', component: () => import('pages/LandingPage.vue') },
+      { path: 'auth', component: () => import('pages/AuthPage.vue') },
+      { path: 'usluge', component: () => import('pages/ServicesPage.vue') },
+      { path: 'usluge/:id', component: () => import('pages/ServiceDetailsPage.vue') }
     ]
   },
-
   {
-    path: '/user',
-    component: () => import('layouts/UserLayout.vue'),
+    path: '/korisnik',
+    component: () => import('layouts/AppLayout.vue'),
     meta: { requiresAuth: true, role: 'korisnik' },
     children: [
-      { path: 'popisfoto', component: () => import('pages/PopisFotografa.vue') },
-      { path: 'Popisdogadaja', component: () => import('pages/DogadajList.vue') },
-      { path: 'popisrez', component: () => import('pages/PopisRezervacija.vue') },
-      { path: 'popisusluga', component: () => import('pages/PopisUsluga.vue') },
-      { path: 'prikazkorisnika', component: () => import('pages/PrikazKorisnika.vue') }
+      { path: '', component: () => import('pages/DashboardPage.vue') },
+      { path: 'usluge', component: () => import('pages/ServicesPage.vue') },
+      { path: 'rezervacija', component: () => import('pages/user/ReservationPage.vue') },
+      { path: 'rezervacije', component: () => import('pages/user/MyReservationsPage.vue') },
+      { path: 'profil', component: () => import('pages/user/ProfilePage.vue') }
     ]
   },
-
+  {
+    path: '/fotograf',
+    component: () => import('layouts/AppLayout.vue'),
+    meta: { requiresAuth: true, role: 'fotograf' },
+    children: [
+      { path: '', component: () => import('pages/DashboardPage.vue') },
+      { path: 'portfolio', component: () => import('pages/photographer/PortfolioPage.vue') },
+      { path: 'rezervacije', component: () => import('pages/photographer/PhotographerReservationsPage.vue') },
+      { path: 'dostupnost', component: () => import('pages/photographer/AvailabilityPage.vue') },
+      { path: 'profil', component: () => import('pages/photographer/ProfilePage.vue') }
+    ]
+  },
   {
     path: '/admin',
-    component: () => import('layouts/AdminLayout.vue'),
+    component: () => import('layouts/AppLayout.vue'),
     meta: { requiresAuth: true, role: 'admin' },
     children: [
-      { path: '', component: () => import('pages/IndexPage.vue') },
-      { path: 'popisfoto', component: () => import('pages/PopisFotografa.vue') },
-      { path: 'unosfoto', component: () => import('pages/UnosFotografa.vue') },
-      { path: 'potvrda', component: () => import('pages/PotvrdaRegistracije.vue')},
-      { path: 'Popisdogadaja', component: () => import('pages/DogadajList.vue') },
-      { path: 'Unosdogadaja', component: () => import('pages/DogadajUnos.vue') },
-      { path: 'popisrez', component: () => import('pages/PopisRezervacija.vue') },
-      { path: 'unosrez', component: () => import('pages/UnosRezervacije.vue') },
-      { path: 'popisusluga', component: () => import('pages/PopisUsluga.vue') },
-      { path: 'unosusluga', component: () => import('pages/UnosUsluge.vue') },
-      { path: 'prikazkorisnika', component: () => import('pages/PrikazKorisnika.vue') },
-      { path: 'unoskorisnika', component: () => import('pages/UnosKorisnika.vue') }
+      { path: '', component: () => import('pages/DashboardPage.vue') },
+      { path: 'korisnici', component: () => import('pages/admin/CrudPage.vue'), meta: { crudType: 'korisnici' } },
+      { path: 'fotografi', component: () => import('pages/admin/CrudPage.vue'), meta: { crudType: 'fotografi' } },
+      { path: 'usluge', component: () => import('pages/admin/CrudPage.vue'), meta: { crudType: 'usluge' } },
+      { path: 'rezervacije', component: () => import('pages/admin/ReservationsAdminPage.vue') },
+      { path: 'izvjestaji', component: () => import('pages/admin/ReportsPage.vue') },
+      { path: 'upravljanje', component: () => import('pages/admin/ManagementPage.vue') },
+      { path: 'specijalne-funkcije', component: () => import('pages/admin/SpecialFunctionsPage.vue') }
     ]
   },
-
-  {
-    path: '/:catchAll(.*)*',
-    component: () => import('pages/ErrorNotFound.vue')
-  }
+  { path: '/:catchAll(.*)*', component: () => import('pages/ErrorNotFound.vue') }
 ]
 
 export default routes
