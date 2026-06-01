@@ -280,4 +280,44 @@ app.get('/api/reports/summary', async (req, res) => {
   } catch (e) { fail(res, e) }
 })
 
+
+app.get('/api/usluge/:id', async (req, res) => {
+  try {
+    const rows = await q(
+      `SELECT usluga_id,
+              naziv_dostupne_usluge naziv,
+              opis_dostupne_usluge   opis,
+              cijena_dostupne_usluge cijena,
+              trajanje_dostupne_usluge trajanje
+       FROM usluga WHERE usluga_id = ?`,
+      [req.params.id]
+    )
+    if (rows.length === 0) return res.status(404).json({ error: 'Usluga ne postoji' })
+    res.json(rows[0])
+  } catch (e) { fail(res, e) }
+})
+
+
+app.get('/api/usluge/:id/recenzije', async (req, res) => {
+  try {
+    const rows = await q(
+      `SELECT
+         pi.povratna_informacija_id,
+         pi.ocjena_povratne_informacije,
+         pi.komentar_povratne_informacije,
+         pi.datum_povratne_informacije,
+         k.ime_korisnika,
+         k.prezime_korisnika
+       FROM povratne_informacije pi
+       LEFT JOIN korisnik k ON k.korisnik_id = pi.korisnik_id
+       WHERE pi.usluga_id = ?
+       ORDER BY pi.datum_povratne_informacije DESC`,
+      [req.params.id]
+    )
+    res.json(rows)
+  } catch (e) { fail(res, e) }
+})
+
+
+
 app.listen(port, () => console.log(`Elegant Eye API running on http://localhost:${port}`))

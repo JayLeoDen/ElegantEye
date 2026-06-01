@@ -1,13 +1,163 @@
 <template>
-  <q-page class="ee-page"><h1 class="page-heading">Pregled i obrada rezervacija</h1><q-table flat bordered :rows="rows" :columns="columns" row-key="rezervacija_id"><template #body-cell-actions="p"><q-td :props="p"><q-btn dense color="positive" label="Potvrdi" @click="status(p.row,'potvrdjena')" class="q-mr-sm"/><q-btn dense color="negative" label="Odbij" @click="status(p.row,'odbijena')"/></q-td></template></q-table></q-page>
+  <q-page class="ee-page">
+    <div class="mock-title">9. Pregled i obrada rezervacija fotografa/snimatelja</div>
+    <section class="mock-window">
+      <div class="mock-bar">
+        <span class="mock-dot"/><span class="mock-dot"/><span class="mock-dot"/>
+        <span class="q-ml-md">Rezervacije pružatelja usluge</span>
+      </div>
+      <div class="mock-content">
+
+        <q-table
+          flat bordered
+          :rows="rows"
+          :columns="columns"
+          row-key="rezervacija_id"
+          :loading="ucitavanje"
+          no-data-label="Nema rezervacija"
+        >
+
+          <!-- Status badge — Mockup 9 -->
+          <template #body-cell-status="p">
+            <q-td :props="p">
+              <q-badge
+                :color="statusBoja(p.row.status_rezervacije)"
+                :label="statusLabel(p.row.status_rezervacije)"
+              />
+            </q-td>
+          </template>
+
+          <!-- Akcijski gumbi — Mockup 9 -->
+          <template #body-cell-actions="p">
+            <q-td :props="p" class="q-gutter-xs">
+              <q-btn
+                v-if="!p.row.status_rezervacije || p.row.status_rezervacije === 'nova' || p.row.status_rezervacije === 'na_cekanju'"
+                rounded dense
+                color="green"
+                label="Potvrdi rezervaciju"
+                size="sm"
+                @click="promijeniStatus(p.row, 'potvrdjena')"
+              />
+              <q-btn
+                v-if="!p.row.status_rezervacije || p.row.status_rezervacije === 'nova' || p.row.status_rezervacije === 'na_cekanju'"
+                rounded dense
+                color="red-4"
+                label="Odbij rezervaciju"
+                size="sm"
+                @click="promijeniStatus(p.row, 'odbijena')"
+              />
+              <q-btn
+                rounded dense
+                outline
+                label="Pregled detalja"
+                size="sm"
+                :to="p.row.usluga_id ? `/usluge/${p.row.fotograf_snimatelj_id}` : '#'"
+              />
+            </q-td>
+          </template>
+
+        </q-table>
+
+      </div>
+    </section>
+  </q-page>
 </template>
+
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
 import { getUser } from 'src/services/auth'
-const user=getUser(); const rows=ref([])
-const columns=[{name:'rezervacija_id',label:'ID',field:'rezervacija_id'},{name:'datum',label:'Datum',field:'datum_nove_rezervacije'},{name:'vrijeme',label:'Vrijeme',field:'vrijeme_nove_rezervacije'},{name:'korisnik',label:'Klijent',field:r=>`${r.ime_korisnika||''} ${r.prezime_korisnika||''}`},{name:'lokacija',label:'Lokacija',field:'lokacija_dogadaja'},{name:'napomena',label:'Napomena',field:'napomena_rezervacije'},{name:'status',label:'Status',field:'status_rezervacije'},{name:'actions',label:'Akcije',field:'actions'}]
-async function load(){ rows.value=(await api.get('/rezervacije',{params:{fotograf_snimatelj_id:user?.id}})).data }
-async function status(row,s){ await api.put(`/rezervacije/${row.rezervacija_id}/status`,{status:s}); load() }
+
+const $q = useQuasar()
+const user = getUser()
+const rows = ref([])
+const ucitavanje = ref(false)
+
+const columns = [
+  {
+    name: 'klijent',
+    label: 'Klijent',
+    field: r => `${r.ime_korisnika || ''} ${r.prezime_korisnika || ''}`.trim() || `Korisnik #${r.korisnik_id}`,
+    align: 'left'
+  },
+  {
+    name: 'datum',
+    label: 'Datum',
+    field: r => r.datum_nove_rezervacije
+      ? new Date(r.datum_nove_rezervacije).toLocaleDateString('hr-HR')
+      : '—',
+    align: 'left'
+  },
+  {
+    name: 'usluga',
+    label: 'Usluga',
+    field: r => r.naziv_usluge || r.naziv_dostupne_usluge || `Usluga #${r.usluga_id}`,
+    align: 'left'
+  },
+  {
+    name: 'status',
+    label: 'Status',
+    field: 'status_rezervacije',
+    align: 'left'
+  },
+  {
+    name: 'actions',
+    label: 'Akcije',
+    field: 'actions',
+    align: 'left'
+  }
+]
+
+function statusLabel(s) {
+  const m = {
+    nova: 'Na čekanju',
+    na_cekanju: 'Na čekanju',
+    potvrdjena: 'Potvrđena',
+    odbijena: 'Odbijena'
+  }
+  return m[s] ?? 'Na čekanju'
+}
+
+function statusBoja(s) {
+  const m = {
+    nova: 'orange',
+    na_cekanju: 'orange',
+    potvrdjena: 'green',
+    odbijena: 'red'
+  }
+  return m[s] ?? 'orange'
+}
+
+async function load() {
+  ucitavanje.value = true
+  try {
+    rows.value = (
+      await api.get('/rezervacije', {
+        params: { fotograf_snimatelj_id: user?.id }
+      })
+    ).data
+  } catch (e) {
+    console.error(e)
+    $q.notify({ type: 'negative', message: 'Greška pri dohvaćanju rezervacija' })
+  } finally {
+    ucitavanje.value = false
+  }
+}
+
+async function promijeniStatus(row, s) {
+  try {
+    await api.put(`/rezervacije/${row.rezervacija_id}/status`, { status: s })
+    $q.notify({
+      type: 'positive',
+      message: s === 'potvrdjena' ? 'Rezervacija potvrđena!' : 'Rezervacija odbijena.'
+    })
+    load()
+  } catch (e) {
+    console.error(e)
+    $q.notify({ type: 'negative', message: 'Greška pri promjeni statusa' })
+  }
+}
+
 onMounted(load)
 </script>
