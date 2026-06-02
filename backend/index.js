@@ -214,11 +214,68 @@ app.post('/api/rezervacije', async (req, res) => {
 })
 
 app.put('/api/rezervacije/:id/status', async (req, res) => {
-  try { await q('UPDATE rezervacija_korisnika SET status_rezervacije=? WHERE rezervacija_id=?', [req.body.status, req.params.id]); ok(res, { message: 'Status ažuriran' }) } catch (e) { fail(res, e) }
+  try {
+    await q(
+      'UPDATE rezervacija_korisnika SET status_rezervacije=? WHERE rezervacija_id=?',
+      [req.body.status, req.params.id]
+    )
+
+    ok(res, { message: 'Status ažuriran' })
+  } catch (e) {
+    fail(res, e)
+  }
+})
+
+app.put('/api/rezervacije/:id', async (req, res) => {
+  try {
+    const b = req.body
+
+    const datum = b.datum_nove_rezervacije
+      ? String(b.datum_nove_rezervacije).split('T')[0]
+      : null
+
+    const vrijeme = b.vrijeme_nove_rezervacije
+      ? String(b.vrijeme_nove_rezervacije).slice(0, 5)
+      : null
+
+    await q(`
+      UPDATE rezervacija_korisnika r
+      LEFT JOIN dogadaj d ON d.dogadaj_id = r.dogadaj_id
+      SET
+        r.datum_nove_rezervacije = ?,
+        r.vrijeme_nove_rezervacije = ?,
+        r.napomena_rezervacije = ?,
+        d.datum_dogadaja = ?,
+        d.vrijeme_dogadaja = ?,
+        d.lokacija_dogadaja = ?
+      WHERE r.rezervacija_id = ?
+    `, [
+      datum,
+      vrijeme,
+      b.napomena_rezervacije || '',
+      datum,
+      vrijeme,
+      b.lokacija_dogadaja || '',
+      req.params.id
+    ])
+
+    ok(res, { message: 'Rezervacija ažurirana' })
+  } catch (e) {
+    fail(res, e)
+  }
 })
 
 app.delete('/api/rezervacije/:id', async (req, res) => {
-  try { await q('DELETE FROM rezervacija_korisnika WHERE rezervacija_id=?', [req.params.id]); ok(res, { message: 'Rezervacija obrisana' }) } catch (e) { fail(res, e) }
+  try {
+    await q(
+      'DELETE FROM rezervacija_korisnika WHERE rezervacija_id=?',
+      [req.params.id]
+    )
+
+    ok(res, { message: 'Rezervacija obrisana' })
+  } catch (e) {
+    fail(res, e)
+  }
 })
 
 app.get('/api/dostupnost', async (req, res) => {

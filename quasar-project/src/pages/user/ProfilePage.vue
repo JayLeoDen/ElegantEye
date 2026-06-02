@@ -54,10 +54,39 @@ const profile = reactive({ ime: user.ime || '', prezime: user.prezime || '', ema
 const reservations = ref([])
 const pending = computed(() => reservations.value.filter(r => (r.status_rezervacije || 'na cekanju') === 'na cekanju').length)
 const columns = [
-  { name: 'datum', label: 'Datum', field: 'datum_nove_rezervacije', align: 'left' },
-  { name: 'vrijeme', label: 'Vrijeme', field: 'vrijeme_nove_rezervacije', align: 'left' },
-  { name: 'usluga', label: 'Usluga', field: 'naziv_usluge', align: 'left' },
-  { name: 'status', label: 'Status', field: r => r.status_rezervacije || 'na cekanju', align: 'left' }
+  {
+    name: 'datum',
+    label: 'Datum',
+    field: row => {
+      if (!row.datum_nove_rezervacije) return ''
+
+      return new Date(row.datum_nove_rezervacije)
+        .toLocaleDateString('hr-HR')
+    },
+    align: 'left'
+  },
+  {
+    name: 'vrijeme',
+    label: 'Vrijeme',
+    field: row => {
+      if (!row.vrijeme_nove_rezervacije) return ''
+
+      return String(row.vrijeme_nove_rezervacije).substring(0, 5)
+    },
+    align: 'left'
+  },
+  {
+    name: 'usluga',
+    label: 'Usluga',
+    field: 'naziv_usluge',
+    align: 'left'
+  },
+  {
+    name: 'status',
+    label: 'Status',
+    field: row => row.status_rezervacije || 'Na čekanju',
+    align: 'left'
+  }
 ]
 
 async function load () {
