@@ -375,6 +375,79 @@ app.get('/api/usluge/:id/recenzije', async (req, res) => {
   } catch (e) { fail(res, e) }
 })
 
+app.post('/api/korisnici', async (req, res) => {
+  try {
+    const { ime, prezime, email } = req.body
+    const r = await q(`
+      INSERT INTO korisnik
+      (
+        ime_korisnika,
+        prezime_korisnika,
+        email_adresa_korisnika,
+        lozinka_korisnika
+      )
+      VALUES (?, ?, ?, ?)
+    `, [
+      ime,
+      prezime,
+      email,
+      '1234'
+    ])
+
+    res.json({
+      message: 'Korisnik dodan',
+      id: r.insertId
+    })
+
+  } catch (e) {
+    fail(res, e)
+  }
+})
+
+app.put('/api/korisnici/:id', async (req, res) => {
+  try {
+
+    const { ime, prezime, email } = req.body
+    await q(`
+      UPDATE korisnik
+      SET
+        ime_korisnika = ?,
+        prezime_korisnika = ?,
+        email_adresa_korisnika = ?
+      WHERE korisnik_id = ?
+    `, [
+      ime,
+      prezime,
+      email,
+      req.params.id
+    ])
+
+    res.json({
+      message: 'Korisnik ažuriran'
+    })
+
+  } catch (e) {
+    fail(res, e)
+  }
+})
+
+app.delete('/api/korisnici/:id', async (req, res) => {
+  try {
+
+    await q(`
+      DELETE FROM korisnik
+      WHERE korisnik_id = ?
+    `, [req.params.id])
+
+    res.json({
+      message: 'Korisnik obrisan'
+    })
+
+  } catch (e) {
+    fail(res, e)
+  }
+})
+
 
 
 app.listen(port, () => console.log(`Elegant Eye API running on http://localhost:${port}`))
