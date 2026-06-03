@@ -79,7 +79,7 @@ const navItems = [
   { label: 'Korisnici',           route: '/admin/korisnici' },
   { label: 'Usluge',              route: '/admin/usluge' },
   { label: 'Rezervacije',         route: '/admin/rezervacije' },
-  { label: 'Fotografi',          route: '/admin/fotogr' },
+  { label: 'Fotografi',          route: '/admin/fotografi' },
   { label: 'Specijalne funkcije', route: '/admin/specijalne-funkcije' }
 ]
 

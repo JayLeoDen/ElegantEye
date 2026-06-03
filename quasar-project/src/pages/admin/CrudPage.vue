@@ -89,7 +89,11 @@ const configs = {
     title: 'Upravljanje korisnicima',
     endpoint: '/korisnici',
     id: 'korisnik_id',
-    fields: [],
+    fields: [
+    { name: 'ime',     label: 'Ime'     },
+    { name: 'prezime', label: 'Prezime' },
+    { name: 'email',   label: 'Email'   }
+  ],
     columns: [
       { name: 'korisnik_id', label: 'ID', field: 'korisnik_id', align: 'left' },
       { name: 'ime', label: 'Ime', field: 'ime', align: 'left' },

@@ -38,7 +38,7 @@ const routes = [
     component: () => import('layouts/AppLayout.vue'),
     meta: { requiresAuth: true, role: 'admin' },
     children: [
-      { path: '', component: () => import('pages/DashboardPage.vue') },
+      { path: '', component: () => import('pages/admin/DashboardPage.vue') },
       { path: 'korisnici', component: () => import('pages/admin/CrudPage.vue'), meta: { crudType: 'korisnici' } },
       { path: 'fotografi', component: () => import('pages/admin/CrudPage.vue'), meta: { crudType: 'fotografi' } },
       { path: 'usluge', component: () => import('pages/admin/CrudPage.vue'), meta: { crudType: 'usluge' } },
