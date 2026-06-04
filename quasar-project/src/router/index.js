@@ -15,9 +15,17 @@ export default defineRouter(function () {
   })
 
   Router.beforeEach((to) => {
-    const user = getUser()
-    if (to.meta.requiresAuth && !user) return '/auth'
-    if (to.meta.role && user?.uloga !== to.meta.role) return homeForRole(user?.uloga)
+  const user = getUser()
+
+  if (to.meta.requiresAuth && !user) return '/auth'
+
+  if (to.meta.role && user && user.uloga !== to.meta.role) {
+    return homeForRole(user.uloga)
+  }
+
+  if (to.path === '/auth' && user) {
+    return homeForRole(user.uloga)
+  }
   })
 
   return Router

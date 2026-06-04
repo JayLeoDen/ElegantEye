@@ -125,6 +125,9 @@
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
+import { getUser } from 'src/services/auth'
+
+const user = getUser()
 
 const $q = useQuasar()
 
@@ -211,9 +214,10 @@ async function runSpecialFunction () {
           $q.notify({ type: 'warning', message: 'Unesite tekst poruke.' })
           break
         }
-        await api.post('/poruke', {
-          sadrzaj:    notifForm.value.sadrzaj,
-          tip_poruke: 'obavijest'
+        await api.post('/poruke/admin', {
+          sadrzaj:notifForm.value.sadrzaj,
+          administrator_id: user?.id,
+          korisnik_id:null
         })
         notifForm.value = { sadrzaj: '' }
         $q.notify({ type: 'positive', message: 'Obavijest uspješno poslana.' })

@@ -302,6 +302,19 @@ app.post('/api/poruke', async (req, res) => {
   } catch (e) { fail(res, e) }
 })
 
+app.post('/api/poruke/admin', async (req, res) => {
+  try {
+    const b = req.body
+    await q(`
+      INSERT INTO poruka_administratora 
+      (administrator_id, sadrzaj_poruke_administratora, 
+       datum_poruke_administratora, vrijeme_poruke_administratora)
+      VALUES (?, ?, CURDATE(), CURTIME())
+    `, [b.administrator_id, b.sadrzaj])
+    res.json({ message: 'Poruka poslana' })
+  } catch (e) { fail(res, e) }
+})
+
 app.post('/api/povratne-informacije', async (req, res) => {
   try {
     const b = req.body

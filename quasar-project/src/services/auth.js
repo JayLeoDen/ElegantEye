@@ -11,6 +11,6 @@ export function logout () {
 }
 export function homeForRole (role) {
   if (role === 'admin') return '/admin'
-  if (role === 'fotograf') return '/fotograf'
-  return '/korisnik'
+  if (role === 'fotograf') return '/fotograf/profil'
+  return '/korisnik/profil'
 }

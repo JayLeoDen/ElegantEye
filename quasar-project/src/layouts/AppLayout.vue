@@ -36,13 +36,11 @@ const links = computed(() => {
     { label: 'Fotografi', icon: 'photo_camera', to: '/admin/fotografi' },
     { label: 'Usluge', icon: 'design_services', to: '/admin/usluge' },
     { label: 'Rezervacije', icon: 'event', to: '/admin/rezervacije' },
-    { label: 'Izvještaji', icon: 'bar_chart', to: '/admin/izvjestaji' },
+    { label: 'Izvještaji i funkcije', icon: 'bar_chart', to: '/admin/izvjestaji' },
     { label: 'Upravljanje', icon: 'admin_panel_settings', to: '/admin/upravljanje' },
-    { label: 'Specijalne funkcije', icon: 'settings_suggest', to: '/admin/specijalne-funkcije' },
     { label: 'Pomoć i FAQ', icon: 'help_outline', to: '/admin/pomoc' }
   ]
   if (role === 'fotograf') return [
-    { label: 'Dashboard', icon: 'dashboard', to: '/fotograf' },
     { label: 'Portfolio', icon: 'collections', to: '/fotograf/portfolio' },
     { label: 'Rezervacije', icon: 'event_available', to: '/fotograf/rezervacije' },
     { label: 'Dostupnost', icon: 'schedule', to: '/fotograf/dostupnost' },
