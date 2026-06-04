@@ -18,7 +18,7 @@
 
           <div>Ime: {{ profile.ime }} {{ profile.prezime }}</div>
           <div>Vrsta usluge: Fotograf</div>
-          <div>Ocjena: {{ rating }}</div>
+          <div>Ocjena: 4.9</div>
 
           <div class="q-mt-sm">
             <q-chip dense color="primary" outline label="Vjenčanja" />
@@ -29,6 +29,7 @@
 
         <q-card flat bordered class="info-box q-mb-md">
           <div class="text-weight-bold q-mb-sm">Opis i dostupnost</div>
+
           <div>
             {{ profile.opis_rada || 'Profesionalni fotograf specijaliziran za vjenčanja i proslave.' }}
           </div>
@@ -63,6 +64,13 @@
             label="Pregledaj rezervacije"
             to="/fotograf/rezervacije"
           />
+
+          <q-btn
+            outline
+            color="secondary"
+            label="Dostupnost"
+            to="/fotograf/dostupnost"
+          />
         </div>
       </q-card-section>
     </q-card>
@@ -77,6 +85,7 @@
           <q-input outlined dense v-model="profile.ime" label="Ime" class="q-mb-md" />
           <q-input outlined dense v-model="profile.prezime" label="Prezime" class="q-mb-md" />
           <q-input outlined dense v-model="profile.email" label="Email" class="q-mb-md" />
+
           <q-input
             outlined
             type="textarea"
@@ -88,7 +97,12 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Odustani" v-close-popup />
-          <q-btn color="primary" label="Spremi profil" @click="save" />
+
+          <q-btn
+            color="primary"
+            label="Spremi profil"
+            @click="save"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -104,7 +118,6 @@ const $q = useQuasar()
 const user = getUser() || {}
 
 const showEdit = ref(false)
-const rating = ref(4.9)
 
 const profile = reactive({
   ime: user.ime || 'Ivan',
@@ -115,7 +128,10 @@ const profile = reactive({
 
 function save () {
   setUser({
-    user: { ...user, ...profile },
+    user: {
+      ...user,
+      ...profile
+    },
     token: localStorage.getItem('ee_token')
   })
 
@@ -132,13 +148,14 @@ function save () {
 .ee-page {
   padding: 24px;
   background: #f5f7fb;
+  min-height: 100vh;
 }
 
 .page-heading {
   text-align: center;
   font-size: 26px;
   font-weight: 700;
-  margin: 0 0 12px;
+  margin: 0 0 20px;
   color: #17213a;
 }
 

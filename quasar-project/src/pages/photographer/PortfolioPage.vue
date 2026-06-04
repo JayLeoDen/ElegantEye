@@ -2,55 +2,66 @@
   <q-page class="ee-page">
     <h1 class="page-heading">Upravljanje portfoliom</h1>
 
-    <q-card flat bordered class="q-pa-md q-mb-md">
-      <q-form @submit.prevent="save" class="q-gutter-md">
-        <q-input
-          outlined
-          dense
-          v-model="form.naziv_rada"
-          label="Naziv rada"
-        />
-
-        <q-input
-          outlined
-          dense
-          type="textarea"
-          v-model="form.opis_rada"
-          label="Opis rada"
-        />
-
-        <q-input
-          outlined
-          dense
-          v-model="form.medij"
-          label="Link slike ili videa"
-        />
-
-        <q-btn
-          color="primary"
-          label="Spremi u portfolio"
-          type="submit"
-        />
-      </q-form>
-    </q-card>
-
-    <q-card flat bordered>
-      <q-card-section>
-        <div class="text-h6">Moji radovi</div>
-      </q-card-section>
+    <q-card flat bordered class="mockup-card">
+      <div class="mockup-topbar">
+        <div class="dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <b>Portfolio</b>
+      </div>
 
       <q-card-section>
-        <div class="ee-grid">
-          <q-card
+        <div class="row q-gutter-sm q-mb-md">
+          <q-btn outline color="positive" label="Dodaj fotografiju" @click="openForm('fotografija')" />
+          <q-btn outline color="positive" label="Dodaj video" @click="openForm('video')" />
+        </div>
+
+        <q-form v-if="showForm" @submit.prevent="save" class="form-box q-mb-md">
+          <q-input outlined dense v-model="form.naziv_rada" label="Naziv rada" />
+
+          <q-input
+            outlined
+            dense
+            type="textarea"
+            v-model="form.opis_rada"
+            label="Opis rada"
+          />
+
+          <q-input
+            outlined
+            dense
+            v-model="form.medij"
+            :label="form.tip === 'video' ? 'Link videa' : 'Link slike'"
+          />
+
+          <div class="row q-gutter-sm">
+            <q-btn color="primary" label="Spremi" type="submit" />
+            <q-btn flat color="dark" label="Odustani" @click="closeForm" />
+          </div>
+        </q-form>
+
+        <div class="portfolio-grid">
+          <div
             v-for="item in portfolio"
             :key="item.portfolio_id"
-            flat
-            bordered
+            class="portfolio-box"
+            :class="{ selected: selectedId === item.portfolio_id }"
+            @click="selectedId = item.portfolio_id"
           >
+            <video
+              v-if="isVideo(item.medij)"
+              :src="item.medij"
+              controls
+              class="portfolio-media"
+            ></video>
+
             <q-img
-              v-if="item.medij"
+              v-else-if="item.medij"
               :src="item.medij"
               ratio="16/9"
+              class="portfolio-img"
               spinner-color="primary"
             >
               <template v-slot:error>
@@ -60,37 +71,32 @@
               </template>
             </q-img>
 
-            <q-card-section>
-              <div class="text-weight-bold text-h6">
-                {{ item.naziv_rada }}
-              </div>
+            <div class="q-mt-sm text-weight-bold">
+              {{ item.naziv_rada }}
+            </div>
 
-              <p class="text-grey-7 q-mt-sm">
-                {{ item.opis_rada }}
-              </p>
+            <div class="text-grey-7 text-caption">
+              {{ item.opis_rada }}
+            </div>
+          </div>
+        </div>
 
-              <div class="row q-gutter-sm q-mt-md">
-                <q-btn
-                  flat
-                  dense
-                  color="primary"
-                  icon="open_in_new"
-                  label="Otvori sliku"
-                  :href="item.medij"
-                  target="_blank"
-                />
+        <div class="row q-gutter-sm q-mt-md">
+          <q-btn
+            outline
+            color="orange"
+            label="Uredi odabrano"
+            :disable="!selectedItem"
+            @click="editSelected"
+          />
 
-                <q-btn
-                  flat
-                  dense
-                  color="negative"
-                  icon="delete"
-                  label="Obriši"
-                  @click="remove(item.portfolio_id)"
-                />
-              </div>
-            </q-card-section>
-          </q-card>
+          <q-btn
+            outline
+            color="negative"
+            label="Obriši odabrano"
+            :disable="!selectedItem"
+            @click="removeSelected"
+          />
         </div>
       </q-card-section>
     </q-card>
@@ -98,7 +104,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'boot/axios'
 import { getUser } from 'src/services/auth'
@@ -107,6 +113,9 @@ const $q = useQuasar()
 const user = getUser() || {}
 
 const portfolio = ref([])
+const showForm = ref(false)
+const selectedId = ref(null)
+const editId = ref(null)
 
 const form = reactive({
   fotograf_snimatelj_id: user.id || '',
@@ -114,8 +123,42 @@ const form = reactive({
   prezime_fotografa_snimatelja: user.prezime || '',
   naziv_rada: '',
   opis_rada: '',
-  medij: ''
+  medij: '',
+  tip: 'fotografija'
 })
+
+const selectedItem = computed(() => {
+  return portfolio.value.find(item => item.portfolio_id === selectedId.value)
+})
+
+function openForm (tip) {
+  editId.value = null
+  showForm.value = true
+  form.tip = tip
+  form.naziv_rada = ''
+  form.opis_rada = ''
+  form.medij = ''
+}
+
+function closeForm () {
+  showForm.value = false
+  editId.value = null
+  form.naziv_rada = ''
+  form.opis_rada = ''
+  form.medij = ''
+}
+
+function isVideo (url) {
+  if (!url) return false
+
+  const cleanUrl = String(url).split('?')[0].toLowerCase()
+
+  return cleanUrl.endsWith('.mp4') ||
+    cleanUrl.endsWith('.webm') ||
+    cleanUrl.endsWith('.ogg') ||
+    url.includes('youtube.com') ||
+    url.includes('youtu.be')
+}
 
 async function load () {
   try {
@@ -125,15 +168,11 @@ async function load () {
       }
     })
 
+    console.log(res.data)
+
     portfolio.value = res.data
   } catch (error) {
     console.error(error)
-    portfolio.value = []
-
-    $q.notify({
-      type: 'negative',
-      message: 'Greška kod učitavanja portfolija.'
-    })
   }
 }
 
@@ -155,24 +194,24 @@ async function save () {
   }
 
   try {
-    await api.post('/portfolio', {
+    const data = {
       fotograf_snimatelj_id: form.fotograf_snimatelj_id,
       naziv_rada: form.naziv_rada,
       opis_rada: form.opis_rada,
       medij: form.medij,
       ime_fotografa_snimatelja: form.ime_fotografa_snimatelja,
       prezime_fotografa_snimatelja: form.prezime_fotografa_snimatelja
-    })
+    }
 
-    $q.notify({
-      type: 'positive',
-      message: 'Rad je spremljen u portfolio.'
-    })
+    if (editId.value) {
+      await api.put(`/portfolio/${editId.value}`, data)
+      $q.notify({ type: 'positive', message: 'Portfolio je ažuriran.' })
+    } else {
+      await api.post('/portfolio', data)
+      $q.notify({ type: 'positive', message: 'Rad je spremljen u portfolio.' })
+    }
 
-    form.naziv_rada = ''
-    form.opis_rada = ''
-    form.medij = ''
-
+    closeForm()
     await load()
   } catch (error) {
     console.error(error.response?.data || error)
@@ -184,15 +223,30 @@ async function save () {
   }
 }
 
-async function remove (id) {
+function editSelected () {
+  if (!selectedItem.value) return
+
+  editId.value = selectedItem.value.portfolio_id
+  showForm.value = true
+
+  form.naziv_rada = selectedItem.value.naziv_rada || ''
+  form.opis_rada = selectedItem.value.opis_rada || ''
+  form.medij = selectedItem.value.medij || ''
+  form.tip = isVideo(selectedItem.value.medij) ? 'video' : 'fotografija'
+}
+
+async function removeSelected () {
+  if (!selectedItem.value) return
+
   try {
-    await api.delete(`/portfolio/${id}`)
+    await api.delete(`/portfolio/${selectedItem.value.portfolio_id}`)
 
     $q.notify({
       type: 'positive',
-      message: 'Rad je obrisan.'
+      message: 'Odabrani rad je obrisan.'
     })
 
+    selectedId.value = null
     await load()
   } catch (error) {
     console.error(error)
@@ -222,9 +276,90 @@ onMounted(load)
   color: #17213a;
 }
 
-.ee-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+.mockup-card {
+  max-width: 1100px;
+  margin: 0 auto;
+  border-radius: 14px;
+  background: #f8fbff;
+  border: 1px solid #cfd9e8;
+}
+
+.mockup-topbar {
+  height: 42px;
+  background: #e8eef6;
+  border-bottom: 1px solid #cfd9e8;
+  border-radius: 14px 14px 0 0;
+  display: flex;
+  align-items: center;
   gap: 16px;
+  padding: 0 16px;
+  color: #2e3b55;
+}
+
+.dots {
+  display: flex;
+  gap: 7px;
+}
+
+.dots span {
+  width: 10px;
+  height: 10px;
+  background: #9aabc1;
+  border-radius: 50%;
+}
+
+.form-box {
+  padding: 16px;
+  border: 1px dashed #9fb2ca;
+  border-radius: 12px;
+  background: white;
+  display: grid;
+  gap: 12px;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.portfolio-box {
+  min-height: 120px;
+  border: 1px dashed #9fb2ca;
+  border-radius: 12px;
+  background: white;
+  padding: 10px;
+  cursor: pointer;
+  color: #52657d;
+}
+
+.portfolio-img {
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.portfolio-box.selected {
+  border: 2px solid #1976d2;
+  background: #eef6ff;
+}
+
+.portfolio-img {
+  border-radius: 8px;
+}
+
+.portfolio-media {
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: black;
+}
+
+@media (max-width: 700px) {
+  .portfolio-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

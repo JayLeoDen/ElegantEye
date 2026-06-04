@@ -214,9 +214,9 @@ app.put('/api/portfolio/:id', async (req, res) => {
     await q(`
       UPDATE portfolio
       SET
-        azurirani_naziv_rada_portfolija = ?,
-        azurirani_opis_rada_portfolija = ?,
-        azurirana_slika_video_portfolija = ?,
+        naziv_rada_portfolija = ?,
+        opis_rada_portfolija = ?,
+        slika_video_portfolija = ?,
         datum_izmjene_portfolija = CURDATE(),
         ime_fotografa_snimatelja_izmjena = ?,
         prezime_fotografa_snimatelja_izmjena = ?
