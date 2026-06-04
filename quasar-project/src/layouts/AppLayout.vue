@@ -38,20 +38,23 @@ const links = computed(() => {
     { label: 'Rezervacije', icon: 'event', to: '/admin/rezervacije' },
     { label: 'Izvještaji', icon: 'bar_chart', to: '/admin/izvjestaji' },
     { label: 'Upravljanje', icon: 'admin_panel_settings', to: '/admin/upravljanje' },
-    { label: 'Specijalne funkcije', icon: 'settings_suggest', to: '/admin/specijalne-funkcije' }
+    { label: 'Specijalne funkcije', icon: 'settings_suggest', to: '/admin/specijalne-funkcije' },
+    { label: 'Pomoć i FAQ', icon: 'help_outline', to: '/admin/pomoc' }
   ]
   if (role === 'fotograf') return [
     { label: 'Dashboard', icon: 'dashboard', to: '/fotograf' },
     { label: 'Portfolio', icon: 'collections', to: '/fotograf/portfolio' },
     { label: 'Rezervacije', icon: 'event_available', to: '/fotograf/rezervacije' },
     { label: 'Dostupnost', icon: 'schedule', to: '/fotograf/dostupnost' },
-    { label: 'Profil', icon: 'person', to: '/fotograf/profil' }
+    { label: 'Profil', icon: 'person', to: '/fotograf/profil' },
+    { label: 'Pomoć i FAQ', icon: 'help_outline', to: '/fotograf/pomoc' }
   ]
   return [
     { label: 'Usluge', icon: 'search', to: '/korisnik/usluge' },
     { label: 'Nova rezervacija', icon: 'add_circle', to: '/korisnik/rezervacija' },
     { label: 'Moje rezervacije', icon: 'event_note', to: '/korisnik/rezervacije' },
-    { label: 'Profil', icon: 'person', to: '/korisnik/profil' }
+    { label: 'Profil', icon: 'person', to: '/korisnik/profil' },
+    { label: 'Pomoć i FAQ', icon: 'help_outline', to: '/korisnik/pomoc' }
   ]
 })
 function doLogout () { logout(); router.push('/') }

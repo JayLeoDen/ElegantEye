@@ -18,7 +18,8 @@ const routes = [
       { path: 'usluge', component: () => import('pages/ServicesPage.vue') },
       { path: 'rezervacija', component: () => import('pages/user/ReservationPage.vue') },
       { path: 'rezervacije', component: () => import('pages/user/MyReservationsPage.vue') },
-      { path: 'profil', component: () => import('pages/user/ProfilePage.vue') }
+      { path: 'profil', component: () => import('pages/user/ProfilePage.vue') },
+      { path: 'pomoc', component: () => import('pages/HelpPage.vue') }
     ]
   },
   {
@@ -30,7 +31,8 @@ const routes = [
       { path: 'portfolio', component: () => import('pages/photographer/PortfolioPage.vue') },
       { path: 'rezervacije', component: () => import('pages/photographer/PhotographerReservationsPage.vue') },
       { path: 'dostupnost', component: () => import('pages/photographer/AvailabilityPage.vue') },
-      { path: 'profil', component: () => import('pages/photographer/ProfilePage.vue') }
+      { path: 'profil', component: () => import('pages/photographer/ProfilePage.vue') },
+      { path: 'pomoc', component: () => import('pages/HelpPage.vue') }
     ]
   },
   {
@@ -45,9 +47,11 @@ const routes = [
       { path: 'rezervacije', component: () => import('pages/admin/ReservationsAdminPage.vue') },
       { path: 'izvjestaji', component: () => import('pages/admin/ReportsPage.vue') },
       { path: 'upravljanje', component: () => import('pages/admin/ManagementPage.vue') },
-      { path: 'specijalne-funkcije', component: () => import('pages/admin/SpecialFunctionsPage.vue') }
+      { path: 'specijalne-funkcije', component: () => import('pages/admin/SpecialFunctionsPage.vue') },
+      { path: 'pomoc', component: () => import('pages/HelpPage.vue') }
     ]
   },
+  {path: '/pomoc',component: () => import('pages/HelpPage.vue')},
   { path: '/:catchAll(.*)*', component: () => import('pages/ErrorNotFound.vue') }
 ]
 
