@@ -1,73 +1,187 @@
 <template>
   <q-page class="ee-page">
     <h1 class="page-heading">Profil fotografa/snimatelja</h1>
-    <p class="subtle q-mb-lg">Javni profil, opis rada, ocjene i portfolio.</p>
 
-    <div class="row q-col-gutter-lg">
-      <div class="col-12 col-md-5">
-        <q-card flat bordered class="q-pa-lg">
-          <div class="text-h6 q-mb-md">Podaci profila</div>
-          <q-input outlined dense v-model="profile.ime" label="Ime" class="q-mb-md" />
-          <q-input outlined dense v-model="profile.prezime" label="Prezime" class="q-mb-md" />
-          <q-input outlined dense v-model="profile.email" label="Email" class="q-mb-md" />
-          <q-input outlined type="textarea" v-model="profile.opis_rada" label="Opis rada" class="q-mb-md" />
-          <q-btn color="primary" label="Spremi profil" @click="save" />
-        </q-card>
+    <q-card flat bordered class="mockup-card">
+      <div class="mockup-topbar">
+        <div class="dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <b>Profil pružatelja usluge</b>
       </div>
 
-      <div class="col-12 col-md-7">
-        <q-card flat bordered class="q-pa-lg q-mb-md">
-          <div class="row items-center q-col-gutter-md">
-            <div class="col-auto"><q-avatar size="72px" color="primary" text-color="white" icon="photo_camera" /></div>
-            <div class="col">
-              <div class="text-h5 text-weight-bold">{{ profile.ime }} {{ profile.prezime }}</div>
-              <div class="subtle">{{ profile.opis_rada || 'Fotograf i snimatelj za događaje' }}</div>
-              <q-rating v-model="rating" readonly color="amber" size="22px" class="q-mt-sm" />
-            </div>
+      <q-card-section>
+        <q-card flat bordered class="info-box q-mb-md">
+          <div class="text-weight-bold q-mb-sm">Osnovni podaci</div>
+
+          <div>Ime: {{ profile.ime }} {{ profile.prezime }}</div>
+          <div>Vrsta usluge: Fotograf</div>
+          <div>Ocjena: {{ rating }}</div>
+
+          <div class="q-mt-sm">
+            <q-chip dense color="primary" outline label="Vjenčanja" />
+            <q-chip dense color="primary" outline label="Portreti" />
+            <q-chip dense color="primary" outline label="Eventi" />
           </div>
         </q-card>
 
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-h6">Portfolio</div>
-          </q-card-section>
-          <q-card-section>
-            <div class="ee-grid">
-              <q-card v-for="item in portfolio" :key="item.portfolio_id" flat bordered>
-                <q-img :src="item.medij" ratio="16/9" />
-                <q-card-section>
-                  <b>{{ item.naziv_rada }}</b>
-                  <p class="subtle q-mb-none">{{ item.opis_rada }}</p>
-                </q-card-section>
-              </q-card>
-            </div>
-          </q-card-section>
+        <q-card flat bordered class="info-box q-mb-md">
+          <div class="text-weight-bold q-mb-sm">Opis i dostupnost</div>
+          <div>
+            {{ profile.opis_rada || 'Profesionalni fotograf specijaliziran za vjenčanja i proslave.' }}
+          </div>
+
+          <q-input
+            outlined
+            dense
+            readonly
+            model-value="Dostupni termini i cijene"
+            class="q-mt-md"
+          />
         </q-card>
-      </div>
-    </div>
+
+        <div class="row q-gutter-sm">
+          <q-btn
+            outline
+            color="primary"
+            label="Uredi profil"
+            @click="showEdit = true"
+          />
+
+          <q-btn
+            outline
+            color="positive"
+            label="Upravljaj portfoliom"
+            to="/fotograf/portfolio"
+          />
+
+          <q-btn
+            outline
+            color="dark"
+            label="Pregledaj rezervacije"
+            to="/fotograf/rezervacije"
+          />
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <q-dialog v-model="showEdit">
+      <q-card style="width: 500px; max-width: 90vw">
+        <q-card-section>
+          <div class="text-h6">Uredi profil</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-input outlined dense v-model="profile.ime" label="Ime" class="q-mb-md" />
+          <q-input outlined dense v-model="profile.prezime" label="Prezime" class="q-mb-md" />
+          <q-input outlined dense v-model="profile.email" label="Email" class="q-mb-md" />
+          <q-input
+            outlined
+            type="textarea"
+            v-model="profile.opis_rada"
+            label="Opis rada"
+            class="q-mb-md"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Odustani" v-close-popup />
+          <q-btn color="primary" label="Spremi profil" @click="save" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
-import { api } from 'boot/axios'
 import { getUser, setUser } from 'src/services/auth'
 
 const $q = useQuasar()
 const user = getUser() || {}
-const profile = reactive({ ime: user.ime || '', prezime: user.prezime || '', email: user.email || '', opis_rada: user.opis_rada || '' })
-const portfolio = ref([])
-const rating = ref(5)
 
-async function load () {
-  try { portfolio.value = (await api.get('/portfolio', { params: { fotograf_id: user.id } })).data } catch { portfolio.value = [] }
-}
+const showEdit = ref(false)
+const rating = ref(4.9)
+
+const profile = reactive({
+  ime: user.ime || 'Ivan',
+  prezime: user.prezime || 'Horvat',
+  email: user.email || '',
+  opis_rada: user.opis_rada || 'Profesionalni fotograf specijaliziran za vjenčanja i proslave.'
+})
 
 function save () {
-  setUser({ user: { ...user, ...profile }, token: localStorage.getItem('ee_token') })
-  $q.notify({ type: 'positive', message: 'Profil je spremljen lokalno.' })
+  setUser({
+    user: { ...user, ...profile },
+    token: localStorage.getItem('ee_token')
+  })
+
+  showEdit.value = false
+
+  $q.notify({
+    type: 'positive',
+    message: 'Profil je spremljen lokalno.'
+  })
+}
+</script>
+
+<style scoped>
+.ee-page {
+  padding: 24px;
+  background: #f5f7fb;
 }
 
-onMounted(load)
-</script>
+.page-heading {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: #17213a;
+}
+
+.mockup-card {
+  max-width: 1100px;
+  margin: 0 auto;
+  border-radius: 14px;
+  background: #f8fbff;
+  border: 1px solid #cfd9e8;
+}
+
+.mockup-topbar {
+  height: 42px;
+  background: #e8eef6;
+  border-bottom: 1px solid #cfd9e8;
+  border-radius: 14px 14px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  color: #2e3b55;
+}
+
+.dots {
+  display: flex;
+  gap: 7px;
+}
+
+.dots span {
+  width: 10px;
+  height: 10px;
+  background: #9aabc1;
+  border-radius: 50%;
+}
+
+.info-box {
+  border-radius: 12px;
+  padding: 18px;
+  background: white;
+  border: 1px solid #d7e2ef;
+}
+
+.q-chip {
+  font-size: 12px;
+}
+</style>

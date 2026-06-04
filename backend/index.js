@@ -151,31 +151,98 @@ app.get('/api/korisnici', async (req, res) => {
 
 app.get('/api/portfolio', async (req, res) => {
   try {
-    const where = req.query.fotograf_id ? 'WHERE p.fotograf_snimatelj_id=?' : ''
-    const rows = await q(`SELECT p.*, f.ime_fotografa_snimatelja ime, f.prezime_fotografa_snimatelja prezime FROM portfolio_stavka p LEFT JOIN snimatelj_fotograf f ON f.fotograf_snimatelj_id=p.fotograf_snimatelj_id ${where} ORDER BY p.portfolio_id DESC`, req.query.fotograf_id ? [req.query.fotograf_id] : [])
+    const where = req.query.fotograf_id
+      ? 'WHERE p.fotograf_snimatelj_id = ?'
+      : ''
+
+    const rows = await q(`
+      SELECT
+        p.portfolio_id,
+        p.fotograf_snimatelj_id,
+        p.naziv_rada_portfolija AS naziv_rada,
+        p.opis_rada_portfolija AS opis_rada,
+        p.slika_video_portfolija AS medij,
+        p.datum_objave_portfolija AS datum_objave,
+        p.ime_fotografa_snimatelja,
+        p.prezime_fotografa_snimatelja
+      FROM portfolio p
+      ${where}
+      ORDER BY p.portfolio_id DESC
+    `, req.query.fotograf_id ? [req.query.fotograf_id] : [])
+
     ok(res, rows)
-  } catch (e) { ok(res, []) }
+  } catch (e) {
+    fail(res, e)
+  }
 })
 
 app.post('/api/portfolio', async (req, res) => {
   try {
-    const { fotograf_snimatelj_id, naziv_rada, opis_rada, medij } = req.body
-    const r = await q(`INSERT INTO portfolio_stavka (fotograf_snimatelj_id, naziv_rada, opis_rada, medij, datum_objave) VALUES (?, ?, ?, ?, CURDATE())`, [fotograf_snimatelj_id, naziv_rada, opis_rada || '', medij || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=900'])
-    ok(res, { message: 'Portfolio spremljen', id: r.insertId })
-  } catch (e) { fail(res, e) }
-})
+    const b = req.body
 
+    const r = await q(`
+      INSERT INTO portfolio
+      (
+        fotograf_snimatelj_id,
+        naziv_rada_portfolija,
+        opis_rada_portfolija,
+        slika_video_portfolija,
+        datum_objave_portfolija,
+        ime_fotografa_snimatelja,
+        prezime_fotografa_snimatelja
+      )
+      VALUES (?, ?, ?, ?, CURDATE(), ?, ?)
+    `, [
+      b.fotograf_snimatelj_id,
+      b.naziv_rada,
+      b.opis_rada || '',
+      b.medij || '',
+      b.ime_fotografa_snimatelja || null,
+      b.prezime_fotografa_snimatelja || null
+    ])
+
+    ok(res, { message: 'Portfolio spremljen', id: r.insertId })
+  } catch (e) {
+    fail(res, e)
+  }
+})
 
 app.put('/api/portfolio/:id', async (req, res) => {
   try {
-    const { naziv_rada, opis_rada, medij } = req.body
-    await q('UPDATE portfolio_stavka SET naziv_rada=?, opis_rada=?, medij=?, datum_izmjene=CURDATE() WHERE portfolio_id=?', [naziv_rada, opis_rada || '', medij, req.params.id])
+    const b = req.body
+
+    await q(`
+      UPDATE portfolio
+      SET
+        azurirani_naziv_rada_portfolija = ?,
+        azurirani_opis_rada_portfolija = ?,
+        azurirana_slika_video_portfolija = ?,
+        datum_izmjene_portfolija = CURDATE(),
+        ime_fotografa_snimatelja_izmjena = ?,
+        prezime_fotografa_snimatelja_izmjena = ?
+      WHERE portfolio_id = ?
+    `, [
+      b.naziv_rada,
+      b.opis_rada || '',
+      b.medij || '',
+      b.ime_fotografa_snimatelja || null,
+      b.prezime_fotografa_snimatelja || null,
+      req.params.id
+    ])
+
     ok(res, { message: 'Portfolio ažuriran' })
-  } catch (e) { fail(res, e) }
+  } catch (e) {
+    fail(res, e)
+  }
 })
 
 app.delete('/api/portfolio/:id', async (req, res) => {
-  try { await q('DELETE FROM portfolio_stavka WHERE portfolio_id=?', [req.params.id]); ok(res, { message: 'Portfolio obrisan' }) } catch (e) { fail(res, e) }
+  try {
+    await q('DELETE FROM portfolio WHERE portfolio_id = ?', [req.params.id])
+    ok(res, { message: 'Portfolio obrisan' })
+  } catch (e) {
+    fail(res, e)
+  }
 })
 
 app.get('/api/rezervacije', async (req, res) => {
@@ -279,16 +346,62 @@ app.delete('/api/rezervacije/:id', async (req, res) => {
 })
 
 app.get('/api/dostupnost', async (req, res) => {
-  try { ok(res, await q('SELECT * FROM dostupnost WHERE (? IS NULL OR fotograf_snimatelj_id=?) ORDER BY datum_dostupnosti DESC', [req.query.fotograf_snimatelj_id || null, req.query.fotograf_snimatelj_id || null])) } catch (e) { ok(res, []) }
+  try {
+    const rows = await q(`
+      SELECT
+        dostupnost_id,
+        fotograf_snimatelj_id,
+        datum_dostupnosti_fotografa_snimatelja AS datum_dostupnosti,
+        vrijeme_dostupnosti_fotografa_snimatelja AS vrijeme_dostupnosti,
+        status_dostupnosti_fotografa_snimatelja AS status_dostupnosti,
+        ime_fotografa_snimatelja,
+        prezime_fotografa_snimatelja
+      FROM dostupnost_fotografa
+      WHERE (? IS NULL OR fotograf_snimatelj_id = ?)
+      ORDER BY datum_dostupnosti_fotografa_snimatelja DESC
+    `, [
+      req.query.fotograf_snimatelj_id || null,
+      req.query.fotograf_snimatelj_id || null
+    ])
+
+    ok(res, rows)
+  } catch (e) {
+    fail(res, e)
+  }
 })
 
 app.post('/api/dostupnost', async (req, res) => {
   try {
     const b = req.body
-    const r = await q('INSERT INTO dostupnost (fotograf_snimatelj_id, datum_dostupnosti, vrijeme_dostupnosti, status_dostupnosti) VALUES (?, ?, ?, ?)', [b.fotograf_snimatelj_id, b.datum_dostupnosti, b.vrijeme_dostupnosti, b.status_dostupnosti || 'slobodan'])
-    ok(res, { message: 'Dostupnost spremljena', id: r.insertId })
-  } catch (e) { fail(res, e) }
-})
+
+    const r = await q(`
+      INSERT INTO dostupnost_fotografa
+      (
+        fotograf_snimatelj_id,
+        datum_dostupnosti_fotografa_snimatelja,
+        vrijeme_dostupnosti_fotografa_snimatelja,
+        status_dostupnosti_fotografa_snimatelja,
+        ime_fotografa_snimatelja,
+        prezime_fotografa_snimatelja
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+      b.fotograf_snimatelj_id,
+      b.datum_dostupnosti,
+      b.vrijeme_dostupnosti,
+      b.status_dostupnosti || 'slobodan',
+      b.ime_fotografa_snimatelja || null,
+      b.prezime_fotografa_snimatelja || null
+    ])
+
+    ok(res, {
+      message: 'Dostupnost spremljena',
+      id: r.insertId
+    })
+  } catch (e) {
+    fail(res, e)
+  }
+})  
 
 app.get('/api/poruke', async (req, res) => {
   try { ok(res, await q('SELECT * FROM poruka_napomena WHERE (? IS NULL OR rezervacija_id=?) ORDER BY poruka_id DESC', [req.query.rezervacija_id || null, req.query.rezervacija_id || null])) } catch (e) { ok(res, []) }
