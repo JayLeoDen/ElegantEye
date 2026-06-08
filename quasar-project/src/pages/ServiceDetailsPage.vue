@@ -8,14 +8,12 @@
       </div>
       <div class="mock-content">
 
-        <!-- Loading -->
         <div v-if="ucitavanje" class="flex flex-center q-pa-xl">
           <q-spinner color="primary" size="3em" />
         </div>
 
         <template v-else>
 
-          <!-- Header — Mockup 4 -->
           <div class="hero-box q-mb-md">
             <h1>
               {{ fotograf?.ime }} {{ fotograf?.prezime }}
@@ -32,7 +30,6 @@
             </p>
           </div>
 
-          <!-- Opis usluge -->
           <div class="card-line q-mb-md">
             <b>Opis usluge</b><br>
             <span class="text-grey-7">
@@ -46,7 +43,6 @@
             </div>
           </div>
 
-          <!-- Portfolio -->
           <h6 class="q-my-sm" v-if="portfolio.length">Portfolio</h6>
           <div class="ee-grid" v-if="portfolio.length">
             <q-card v-for="p in portfolio" :key="p.portfolio_id || p.naziv_rada" flat bordered>
@@ -58,7 +54,6 @@
             </q-card>
           </div>
 
-          <!-- Recenzije iz povratne_informacije — Mockup 4 -->
           <h6 class="q-my-md">Recenzije</h6>
 
           <div v-if="ucitavanjeRecenzija" class="text-grey q-mb-sm">
@@ -107,7 +102,6 @@ const recenzije = ref([])
 const ucitavanje = ref(true)
 const ucitavanjeRecenzija = ref(true)
 
-// Prva usluga fotografa (za prikaz cijene/trajanja)
 const prvaUsluga = computed(() => usluge.value[0] || null)
 
 function formatCijena(c) {
@@ -116,7 +110,6 @@ function formatCijena(c) {
 }
 
 onMounted(async () => {
-  // 1. Dohvati fotografa
   try {
     const fs = (await api.get('/fotografi')).data
     fotograf.value = fs.find(x => String(x.fotograf_snimatelj_id) === String(id)) || fs[0]
@@ -124,14 +117,12 @@ onMounted(async () => {
     console.error('Greška kod dohvaćanja fotografa:', err)
   }
 
-  // 2. Dohvati portfolio
   try {
     portfolio.value = (await api.get('/portfolio', { params: { fotograf_id: id } })).data
   } catch {
     portfolio.value = []
   }
 
-  // 3. Dohvati usluge (za cijenu i trajanje)
   try {
     usluge.value = (await api.get('/usluge')).data
   } catch {
@@ -140,7 +131,6 @@ onMounted(async () => {
 
   ucitavanje.value = false
 
-  // 4. Dohvati recenzije (povratne_informacije) za prvu uslugu
   ucitavanjeRecenzija.value = true
   try {
     if (usluge.value.length > 0) {

@@ -17,7 +17,6 @@
           no-data-label="Nema rezervacija"
         >
 
-          <!-- Status badge — Mockup 9 -->
           <template #body-cell-status="p">
             <q-td :props="p">
               <q-badge
@@ -27,7 +26,6 @@
             </q-td>
           </template>
 
-          <!-- Akcijski gumbi — Mockup 9 -->
           <template #body-cell-actions="p">
             <q-td :props="p" class="q-gutter-xs">
               <q-btn

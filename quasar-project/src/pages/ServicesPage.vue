@@ -8,7 +8,6 @@
       </div>
       <div class="mock-content">
 
-        <!-- Pretraga -->
         <q-input
           outlined dense
           v-model="search"
@@ -17,7 +16,6 @@
           clearable
         />
 
-        <!-- Filter -->
         <q-select
           outlined dense
           v-model="filter"
@@ -26,12 +24,10 @@
           class="q-mb-md"
         />
 
-        <!-- Loading -->
         <div v-if="ucitavanje" class="flex flex-center q-pa-md">
           <q-spinner color="primary" size="2em" />
         </div>
 
-        <!-- Lista stavki -->
         <template v-else>
           <div
             v-for="stavka in filtrirano"
@@ -81,7 +77,6 @@ function formatCijena(c) {
   return Number(c).toLocaleString('hr-HR', { minimumFractionDigits: 2 }) + ' €'
 }
 
-// Kombinirana lista fotografa
 const kombiniranoLista = computed(() => {
   return fotografi.value.map(f => ({
     _kljuc: `fotograf-${f.fotograf_snimatelj_id}`,
@@ -111,7 +106,6 @@ const filtrirano = computed(() => {
 })
 
 onMounted(async () => {
-  // Preuzmi filter query param ako dolazimo s LandingPage
   if (route.query.filter) filter.value = route.query.filter
 
   try {

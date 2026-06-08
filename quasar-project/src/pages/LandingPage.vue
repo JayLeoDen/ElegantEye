@@ -8,7 +8,6 @@
       </div>
       <div class="mock-content">
 
-        <!-- Hero box — gumbi funkcionalni -->
         <div class="hero-box">
           <h1>Rezerviraj fotografa ili snimatelja</h1>
           <p>Jednostavno pretraživanje, pregled portfolija i rezervacija termina.</p>
@@ -20,7 +19,6 @@
             to="/usluge" />
         </div>
 
-        <!-- Navigacijske kartice — klikabilne -->
         <div
           class="card-line cursor-pointer"
           @click="$router.push('/usluge?filter=fotograf')"
@@ -51,5 +49,5 @@
 </template>
 
 <script setup>
-// Navigacija riješena inline @click-om — nema potrebe za dodatnom logikom
+//
 </script>

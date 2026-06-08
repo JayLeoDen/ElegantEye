@@ -323,7 +323,6 @@ async function saveRecord () {
 
     if (dialogMode.value === 'add') {
       if (tab === 'korisnici') {
-        // POST /api/korisnici → { ime, prezime, email }
         await api.post('/korisnici', {
           ime:     form.value.ime,
           prezime: form.value.prezime,
